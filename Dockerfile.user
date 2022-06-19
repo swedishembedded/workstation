@@ -1,5 +1,5 @@
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-zephyrprojectrtos/ci:latest}
+FROM ${BASE_IMAGE:-swedishembedded/zephyr-build:latest}
 
 # Install packages
 RUN apt-get -y update && \
@@ -19,13 +19,9 @@ RUN apt-get clean -y && \
 	rm -rf /var/lib/apt/lists/*
 
 # Add entrypoint script
-ADD ./entrypoint.sh /home/user/entrypoint.sh
+ADD scripts/docker/entrypoint.sh /home/user/entrypoint.sh
 RUN dos2unix /home/user/entrypoint.sh
 ENTRYPOINT ["/home/user/entrypoint.sh"]
-
-# Add bash completion script
-ADD ./bash_completion /home/user/.bash_completion
-RUN mkdir -p /home/user/.bash_completion.d
 
 # Switch to 'user' context
 USER user
@@ -35,8 +31,8 @@ ENV DISPLAY=:0
 ENV ZEPHYR_BASE=/workdir/zephyr
 
 # Set working directory
-WORKDIR /workdir
-VOLUME ["/workdir"]
+WORKDIR /builds
+VOLUME ["/builds"]
 
 # Configure VNC authentication
 ARG VNCPASSWD=zephyr
@@ -50,7 +46,7 @@ USER root
 RUN chown -R user:user /home/user
 
 # Make 'user' default on launch
-USER user
+#USER user
 
 # Launch bash shell by default
 CMD ["/bin/bash"]

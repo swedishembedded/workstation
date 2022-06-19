@@ -178,6 +178,21 @@ RUN mkdir -p /opt/toolchains && \
 	zephyr-sdk-${ZSDK_VERSION}/setup.sh -t all -h -c && \
 	rm zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.gz
 
+# Dependencies for documentation generation
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	doxygen doxygen-latex dot2tex  \
+	librsvg2-bin \
+	texlive-latex-base \
+	texlive-latex-extra \
+	latexmk \
+	texlive-fonts-recommended
+
+# Dependencies for code checking
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	black clang-format
+
 # Clean up stale packages
 RUN apt-get clean -y && \
 	apt-get autoremove --purge -y && \
@@ -206,3 +221,7 @@ USER root
 ENV ZEPHYR_TOOLCHAIN_VARIANT=zephyr
 ENV PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
 ENV OVMF_FD_PATH=/usr/share/ovmf/OVMF.fd
+
+RUN pip3 install \
+		cmakelang \
+		robotframework

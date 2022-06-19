@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# abort on error (note that this is only a fallback. You should still check
+# return codes every single time!)
+set -e
+
+ROOT="$(realpath $(dirname $BASH_SOURCE)/..)"
+
+# Build the base image
+sudo docker build \
+	-f $ROOT/scripts/docker/Dockerfile \
+	--build-arg UID=$(id -u) \
+	--build-arg GID=$(id -g) \
+	-t swedishembedded/zephyr-build:latest .
+
+# Build user image
+sudo docker build \
+	-f $ROOT/scripts/docker/Dockerfile.user \
+	--build-arg UID=$(id -u) \
+	--build-arg GID=$(id -g) \
+	-t swedishembedded/zephyr-build:latest .
