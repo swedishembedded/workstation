@@ -178,6 +178,15 @@ RUN mkdir -p /opt/toolchains && \
 	zephyr-sdk-${ZSDK_VERSION}/setup.sh -t all -h -c && \
 	rm zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.gz
 
+# Install additional python packages
+RUN pip3 install \
+		cmakelang \
+		click \
+		clang==12.0.1 \
+		black==22.3.0 \
+		robotframework==4.0.1
+
+# Install additional apt packages
 # Dependencies for documentation generation
 RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
@@ -186,12 +195,46 @@ RUN apt-get update && \
 	texlive-latex-base \
 	texlive-latex-extra \
 	latexmk \
-	texlive-fonts-recommended
+	texlive-fonts-recommended \
+	ruby bundler
+
+# Dependencies for asciidoc pdf generation
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	curl aspell aspell-en
+
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	nodejs
+
+RUN gem install \
+	asciidoctor-pdf
+
+# Ruby dependencies for CMock
+RUN gem install \
+	bundler \
+	rake \
+	manifest \
+	require_all \
+	constructor \
+	diy
 
 # Dependencies for code checking
 RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
-	black clang-format
+	clang-format libclang-12-dev
+
+# Dependencies for ledger
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	ledger
+
+# Dependencies for image tests
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	imagemagick
 
 # Clean up stale packages
 RUN apt-get clean -y && \
@@ -217,11 +260,11 @@ RUN sudo -E -- bash -c ' \
 
 USER root
 
+# Set working directory
+WORKDIR /builds
+VOLUME ["/builds"]
+
 # Set the locale
 ENV ZEPHYR_TOOLCHAIN_VARIANT=zephyr
 ENV PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
 ENV OVMF_FD_PATH=/usr/share/ovmf/OVMF.fd
-
-RUN pip3 install \
-		cmakelang \
-		robotframework

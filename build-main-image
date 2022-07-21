@@ -4,18 +4,22 @@
 # return codes every single time!)
 set -e
 
-ROOT="$(realpath $(dirname $BASH_SOURCE)/..)"
+sudo docker image rmi swedishembedded/zephy-build:latest || {
+	echo "No image removed"
+}
 
 # Build the base image
 sudo docker build \
-	-f $ROOT/scripts/docker/Dockerfile \
+	-f Dockerfile.base \
+	--build-arg UID=$(id -u) \
+	--build-arg GID=$(id -g) \
+	-t ubuntu:latest .
+
+# Build the main image
+sudo docker build \
+	-f Dockerfile \
 	--build-arg UID=$(id -u) \
 	--build-arg GID=$(id -g) \
 	-t swedishembedded/zephyr-build:latest .
 
-# Build user image
-sudo docker build \
-	-f $ROOT/scripts/docker/Dockerfile.user \
-	--build-arg UID=$(id -u) \
-	--build-arg GID=$(id -g) \
-	-t swedishembedded/zephyr-build:latest .
+sudo docker push swedishembedded/zephyr-build:latest

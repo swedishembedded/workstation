@@ -13,13 +13,31 @@ RUN apt-get -y update && \
 	xterm \
 	xz-utils
 
+# Install gnome stuff
+RUN apt-get -y update &&\
+	apt-get -y install --no-install-recommends -y \
+	network-manager \
+	network-manager-gnome
+
+# Install i3wm
+RUN apt-get -y update &&\
+	apt-get -y install --no-install-recommends -y \
+	i3-wm \
+	i3blocks\
+	i3status \
+	suckless-tools \
+	xss-lock
+
+# Install pyxdg for vnc
+RUN pip3 install pyxdg
+
 # Clean up stale packages
 RUN apt-get clean -y && \
 	apt-get autoremove --purge -y && \
 	rm -rf /var/lib/apt/lists/*
 
 # Add entrypoint script
-ADD scripts/docker/entrypoint.sh /home/user/entrypoint.sh
+ADD entrypoint.sh /home/user/entrypoint.sh
 RUN dos2unix /home/user/entrypoint.sh
 ENTRYPOINT ["/home/user/entrypoint.sh"]
 
@@ -46,7 +64,7 @@ USER root
 RUN chown -R user:user /home/user
 
 # Make 'user' default on launch
-#USER user
+USER user
 
 # Launch bash shell by default
 CMD ["/bin/bash"]
