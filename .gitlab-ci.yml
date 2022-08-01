@@ -1,0 +1,17 @@
+image: docker:latest
+
+stages:
+ - build
+
+build:
+    stage: build
+    artifacts:
+        paths:
+        expire_in: 2 yrs
+        when: always
+
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    before_script:
+    script:
+        - ./build

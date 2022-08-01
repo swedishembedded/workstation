@@ -1,0 +1,14 @@
+# /home/martin/.config/tmuxinator/platform.yml
+
+name: platform
+root: /data/platform/sdk
+
+windows:
+  - editor:
+      root: /data/platform/sdk
+      layout: tiled
+      panes:
+        - emacs -nw
+        - debug
+        - west update
+        - # Extra console

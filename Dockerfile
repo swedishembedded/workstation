@@ -229,12 +229,34 @@ RUN apt-get update && \
 # Dependencies for ledger
 RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
-	ledger
+	build-essential cmake doxygen \
+	libboost-system-dev libboost-dev python3-dev gettext git \
+	libboost-date-time-dev libboost-filesystem-dev \
+	libboost-iostreams-dev libboost-python-dev libboost-regex-dev \
+	libboost-test-dev libedit-dev libgmp3-dev libmpfr-dev texinfo tzdata
+
+# Ledger
+RUN wget https://github.com/ledger/ledger/archive/refs/tags/v3.2.1.tar.gz && \
+	tar -xzf v3.2.1.tar.gz && \
+	pushd ledger-3.2.1 && \
+	mkdir build && (cd build; cmake ..) && \
+	make -C build && \
+	sudo make -C build install
 
 # Dependencies for image tests
 RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
 	imagemagick
+
+# Dependencies for ledger
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	ledger
+
+# Dependencies for tags generation on ci
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	cscope
 
 # Clean up stale packages
 RUN apt-get clean -y && \

@@ -1,0 +1,13 @@
+# /home/martin/.config/tmuxinator/platform.yml
+
+name: platform
+
+windows:
+  - editor:
+      root: /build/platform/sdk
+      layout: main-horizontal
+      panes:
+        - sleep 1 && emacs -nw
+        - west build -b custom_board -d build-apps/custom_board/shell/apps.shell.release/ -s apps/shell
+        - sleep 20 && renode --console --disable-xwt renode/apps/shell/custom_board.resc
+        - # Extra terminal

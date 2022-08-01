@@ -1,0 +1,21 @@
+export LD_LIBRARY_PATH=/usr/local/lib
+export EDITOR="emacs -nw"
+export PS1="SDK \w > "
+
+alias ls="ls -F --color=auto --group-directories-first -v"
+alias git-emails="git shortlog --summary --numbered --email"
+alias ll="ls -lh"
+alias llt="ls --human-readable --size -l -S --classify"
+alias lt="du -sh * | sort -h"
+alias cpv='rsync -ah --info=progress2'
+alias tcn='mv --force -t ~/.local/share/Trash '
+alias cg='cd `git rev-parse --show-toplevel`'
+alias gitk-local="gitk --argscmd='git rev-list --no-walk --branches --tags'"
+alias debug="gdb-multiarch -x ~/.pygdbinit"
+alias develop="emacs -nw"
+alias workspace="tmuxinator start"
+
+export TERM=tmux-256color
+export COLORTERM=truecolor
+
+export PATH=~/.local/bin:"$PATH"

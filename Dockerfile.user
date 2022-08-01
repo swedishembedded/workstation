@@ -1,35 +1,81 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE:-swedishembedded/zephyr-build:latest}
 
-# Install packages
-RUN apt-get -y update && \
-	apt-get -y upgrade && \
-	apt-get install --no-install-recommends -y \
-	openbox \
-	python-xdg \
-	libpython3.8-dev \
-	x11vnc \
-	xvfb \
-	xterm \
-	xz-utils
+ARG EMACS_VERSION=28.1
 
-# Install gnome stuff
-RUN apt-get -y update &&\
-	apt-get -y install --no-install-recommends -y \
-	network-manager \
-	network-manager-gnome
+RUN mkdir -p /build/platform && \
+		chown -R user:user /build
 
-# Install i3wm
-RUN apt-get -y update &&\
-	apt-get -y install --no-install-recommends -y \
-	i3-wm \
-	i3blocks\
-	i3status \
-	suckless-tools \
-	xss-lock
+USER user
+RUN cd /build/platform && \
+		git clone https://gitlab.com/swedishembedded/platform/sdk.git && \
+		cd sdk && \
+		./scripts/init
+USER root
 
-# Install pyxdg for vnc
-RUN pip3 install pyxdg
+# Install emacs dependencies
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	cmake \
+	ncurses-dev \
+	libgccjit0 \
+	libgccjit-10-dev \
+	libjansson4 \
+	libjansson-dev \
+	gnutls-dev \
+	ripgrep \
+	wget
+
+# Install tmux
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	tmux
+
+# Build emacs
+RUN wget -q https://ftpmirror.gnu.org/emacs/emacs-${EMACS_VERSION}.tar.gz https://ftpmirror.gnu.org/emacs/emacs-${EMACS_VERSION}.tar.gz.sig && \
+	tar zxf emacs-${EMACS_VERSION}.tar.gz && \
+	cd emacs-${EMACS_VERSION} && \
+	./configure \
+		--with-x-toolkit=no \
+		--with-xpm=ifavailable \
+		--with-jpeg=ifavailable \
+		--with-gif=ifavailable \
+		--with-tiff=ifavailable \
+	&& \
+	make && \
+	make install && \
+	cd .. && \
+	rm -rf emacs-*
+
+USER user
+# Install DooM emacs
+RUN git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.emacs.d && \
+		~/.emacs.d/bin/doom install --no-env --no-fonts
+
+# Add configuration
+COPY --chown=user:user conf/doom /home/user/.doom.d/
+RUN ~/.emacs.d/bin/doom env && \
+		~/.emacs.d/bin/doom upgrade
+USER root
+
+COPY --chown=user:user conf/tmux/tmux.conf /home/user/.tmux.conf
+COPY --chown=user:user conf/tmux/tmux.conf.local /home/user/.tmux.conf.local
+COPY --chown=user:user conf/tmuxinator /home/user/.config/tmuxinator
+COPY --chown=user:user conf/bashrc /home/user/.bashrc
+COPY --chown=user:user conf/pygdbinit /home/user/.pygdbinit
+
+# Install terminal utilities
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	picocom
+
+# Install debugging tools
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	gdb-multiarch
+
+# Install tmuxinator
+RUN gem install tmuxinator
 
 # Clean up stale packages
 RUN apt-get clean -y && \
@@ -37,33 +83,24 @@ RUN apt-get clean -y && \
 	rm -rf /var/lib/apt/lists/*
 
 # Add entrypoint script
-ADD entrypoint.sh /home/user/entrypoint.sh
-RUN dos2unix /home/user/entrypoint.sh
-ENTRYPOINT ["/home/user/entrypoint.sh"]
+ADD entrypoint.sh /home/user/init
+RUN dos2unix /home/user/init
+ENTRYPOINT ["/home/user/init"]
 
 # Switch to 'user' context
 USER user
 
 # Configure environment variables
 ENV DISPLAY=:0
-ENV ZEPHYR_BASE=/workdir/zephyr
+ENV ZEPHYR_BASE=/build/platform/zephyr
 
 # Set working directory
-WORKDIR /builds
-VOLUME ["/builds"]
-
-# Configure VNC authentication
-ARG VNCPASSWD=zephyr
-RUN mkdir ~/.vnc && x11vnc -storepasswd ${VNCPASSWD} ~/.vnc/passwd
-
-# Expose port 5900 for VNC
-EXPOSE 5900
+WORKDIR /build/
+#VOLUME ["/build/"]
 
 # Adjust 'user' home directory permissions
 USER root
-RUN chown -R user:user /home/user
-
-# Make 'user' default on launch
+RUN chown user:user /home/user/.config
 USER user
 
 # Launch bash shell by default
