@@ -7,13 +7,11 @@ This repository contains two docker images:
 
 The fact that only terminal based tools are used makes these containers highly flexible and usable on any system with a terminal (even windows with WSL installed).
 
-.. image::demo.gif
-	:alt: Demo of the developer image
+![Demo of developer image](demo.gif)
 
 Windows setup (using Windows subsystem for linux (WSL)):
 
-.. image::windows-demo.jpg
-	:alt: WSL development
+![WSL Development](windows-demo.jpg)
 
 ## Support
 
