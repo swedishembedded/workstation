@@ -1,55 +1,86 @@
-# Zephyr Docker Images
+# Swedish Embedded Platform SDK Docker Image
 
-This repository contains the Dockerfiles for the following images:
+This repository contains two docker images:
 
-- **CI Image (_ci_):** contains only the minimal set of software needed for CI operation.
-- **Developer Image (_zephyr-build_):** includes additional tools that can be useful for Zephyr
-  development.
+- **CI Build Image**: to be used for running CI pipeline. This image contains all toolschains and build tools (more than the original Zephyr image!)
+- **Developer Image**: this image contains a standalong development environment based on Doom Emacs and tmux which can be used for development.
+
+The fact that only terminal based tools are used makes these containers highly flexible and usable on any system with a terminal (even windows with WSL installed).
+
+.. image::demo.gif
+	:alt: Demo of the developer image
+
+Windows setup (using Windows subsystem for linux (WSL)):
+
+.. image::windows-demo.jpg
+	:alt: WSL development
+
+## Support
+
+- Community: https://swedishembedded.com/community
 
 ## Developer Docker Image
 
 ### Overview
 
-The Developer docker image includes all tools included in the CI image as well as the additional
-tools that can be useful for Zephyr development, such as the VNC server for testing display sample
-applications.
+The developer image includes all tools included in the build image as well as
+additional tools that are useful for development:
 
-These images include the [Zephyr SDK](https://github.com/zephyrproject-rtos/sdk-ng), which supports
-building most Zephyr targets.
+- **Emacs**: with doom config and extra plugins that make development easy.
+
+- **Tmux**: with specialized theme so you can create multiple workspaces.
+  Essentially making your terminal into a tiling window manager where you can
+  run multiple terminal programs.
+
+- **GDB Dashboard**: for easy graphical GDB debugging.
 
 ### Installation
 
 #### Using Pre-built Developer Docker Image
 
-The pre-built developer docker image is available on both GitHub Container Registry (`ghcr.io`) and
-DockerHub (`docker.io`).
-
-**GitHub Container Registry (`ghcr.io`)**
+Pull the latest prebuilt docker image:
 
 ```
-docker run -ti -v $HOME/Work/zephyrproject:/workdir \
-           ghcr.io/zephyrproject-rtos/zephyr-build:latest
+docker pull swedishembedded/develop:latest
+docker run -ti -v $myworkspace:/data \
+           swedishembedded/develop:latest
 ```
 
-**DockerHub (`docker.io`)**
+The command above mounts your workspace under /data inside the image so you can
+work on your local files from within the image.
+
+In order to flash firmware over USB JTAG you also need to run docker in
+privileged mode and mount usb within docker:
 
 ```
-docker run -ti -v $HOME/Work/zephyrproject:/workdir \
-           docker.io/zephyrprojectrtos/zephyr-build:latest
+docker run -ti -v $myworkspace:/data \
+	--privileged -v /dev/bus/usb:/dev/bus/usb \
+    swedishembedded/develop:latest
 ```
 
-#### Building Developer Docker Image
+This will allow you to access JTAG adapter from inside the container. You can
+also expose other resources to the container in the same way.
 
-The developer docker image can be built using the following command:
-
-```
-docker build -f Dockerfile.user --build-arg UID=$(id -u) --build-arg GID=$(id -g) -t zephyr-build:v<tag> .
-```
-
-It can be used for building Zephyr samples and tests by mounting the Zephyr workspace into it:
+Once inside the image, there is a workspace tool installed called tmuxinator which is bound to alias "workspace". You can open the demo workspace like this:
 
 ```
-docker run -ti -v <path to zephyr workspace>:/workdir zephyr-build:v<tag>
+workspace demo
+```
+
+Check out the configuration like this:
+
+```
+cat ~/.bashrc
+ls -la ~/.config/tmuxinator
+```
+
+#### Building the Images
+
+Images can be built using the supplied shell script:
+
+
+```
+./build
 ```
 
 ### Usage
@@ -59,34 +90,45 @@ docker run -ti -v <path to zephyr workspace>:/workdir zephyr-build:v<tag>
 Follow the steps below to build and run a sample application:
 
 ```
-west build -b qemu_x86 samples/hello_world
-west build -t run
+cd /build/platform
+west build -b stm32f429i_disc1 -s ../zephyr/samples/basic/blinky -t flash
 ```
 
-#### Building display sample applications
+Note that /build/platform is a demo platform that should only be used to
+quickly get started. You should mount a local directory from your filesystem
+when you want to work on actual source code. This is better because then you
+are not creating unnecessary docker data (docker wastes a lot of space when you
+change files since it usually copies changes into "volumes" which quickly eat
+up your disk space if you modify many files inside a container. Therefore it's
+better to keep files you modify on your local system instead)
 
-It is possible to build and run the _native POSIX_ sample applications that produce display outputs
-by connecting to the Docker instance using a VNC client.
+## Cleanup
 
-In order to allow the VNC client to connect to the Docker instance, the port 5900 needs to be
-forwarded to the host:
-
-```
-docker run -ti -p 5900:5900 -v <path to zephyr workspace>:/workdir zephyr-build:v<tag>
-```
-
-Follow the steps below to build a display sample application for the _native POSIX_ board:
+If you find that your system runs out of space then you can always delete all modified docker data by pruning everything (be careful because this will delete any changes you have done to files inside a docker container. It will **not** however remove files you modified in a mounted local directory. So it's safe.):
 
 ```
-west build -b native_posix samples/display/cfb
-west build -t run
+docker system prune --volumes
 ```
 
-The application display output can be observed by connecting a VNC client to _localhost_ at the
-port _5900_. The default VNC password is _zephyr_.
+## Questions
 
-On a Ubuntu host, this can be done by running the following command:
+### Why is the docker image so big?
 
-```
-vncviewer localhost:5900
-```
+Because it includes **all essential tools** including a handful of different
+compilers which are used for crosscompiling, source code and git repositories
+used for demo. Every tool included in the base image is useful at some stage in
+the build process. The build image is designed to be a versatile build image
+that can be used to build not just firmware but multiple types of documentation
+as well.
+
+### Is it possible to reduce the size?
+
+You can probably reduce the size but it is not practical because you will
+always run into cases where you need extra tools and you will find that you
+will need to add them back again. It is better to have a single image that
+contains a complete and reproducible invironment so that it is possible to
+easily scale development to multiple projects.
+
+Besides, 15GB is not much considering that it is basically a full ubuntu setup
+with everything included inside.
+

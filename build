@@ -28,5 +28,3 @@ sudo docker build \
 	--build-arg GID=$(id -g) \
 	-t swedishembedded/develop:latest .
 
-sudo docker push swedishembedded/zephyr-build:latest
-sudo docker push swedishembedded/develop:latest
