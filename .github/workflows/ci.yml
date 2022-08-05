@@ -61,7 +61,6 @@ jobs:
       with:
         images: |
           docker.io/swedishembedded/build
-          ghcr.io/swedishembedded/build
 
     - name: Generate push metadata for Developer image
       if: ${{ github.event_name != 'pull_request' }}
@@ -70,7 +69,6 @@ jobs:
       with:
         images: |
           docker.io/swedishembedded/develop
-          ghcr.io/swedishembedded/develop
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
@@ -109,14 +107,6 @@ jobs:
         registry: docker.io
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Login to GitHub Container Registry
-      if: ${{ github.event_name != 'pull_request' }}
-      uses: docker/login-action@v1
-      with:
-        registry: ghcr.io
-        username: ${{ github.repository_owner }}
-        password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Push CI docker image
       if: ${{ github.event_name != 'pull_request' }}
