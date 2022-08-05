@@ -100,7 +100,7 @@ jobs:
         tags: ${{ steps.meta_developer.outputs.tags }}
         labels: ${{ steps.meta_developer.outputs.labels }}
         build-args: |
-          BASE_IMAGE=localhost:5000/swedishembedded/develop:${{ steps.meta_ci.outputs.version }}
+          BASE_IMAGE=localhost:5000/swedishembedded/build:${{ steps.meta_ci.outputs.version }}
 
     - name: Login to DockerHub
       if: ${{ github.event_name != 'pull_request' }}
