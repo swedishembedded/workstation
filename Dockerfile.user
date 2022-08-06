@@ -8,7 +8,7 @@ RUN mkdir -p /build/platform && \
 
 USER user
 RUN cd /build/platform && \
-		git clone https://gitlab.com/swedishembedded/platform/sdk.git && \
+		git clone https://github.com/swedishembedded/sdk.git && \
 		cd sdk && \
 		./scripts/init
 USER root
