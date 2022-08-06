@@ -1,5 +1,5 @@
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-swedishembedded/zephyr-build:latest}
+FROM ${BASE_IMAGE:-swedishembedded/build:latest}
 
 ARG EMACS_VERSION=28.1
 
