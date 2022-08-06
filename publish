@@ -1,4 +1,4 @@
 #!/bin/bash
 
-sudo docker push swedishembedded/zephyr-build:latest
+sudo docker push swedishembedded/build:latest
 sudo docker push swedishembedded/develop:latest

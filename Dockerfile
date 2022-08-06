@@ -134,7 +134,10 @@ RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
 	; fi
 
 # Install Python dependencies
-RUN pip3 install wheel pip -U &&\
+RUN pip3 install --upgrade pip &&\
+	python3 -m pip install --upgrade setuptools &&\
+	pip3 install --no-cache-dir --force-reinstall -Iv grpcio && \
+	pip3 install wheel && \
 	pip3 install -r https://raw.githubusercontent.com/zephyrproject-rtos/zephyr/master/scripts/requirements.txt && \
 	pip3 install -r https://raw.githubusercontent.com/zephyrproject-rtos/mcuboot/master/scripts/requirements.txt && \
 	pip3 install west &&\
@@ -142,7 +145,7 @@ RUN pip3 install wheel pip -U &&\
 	pip3 install awscli PyGithub junitparser pylint \
 		     statistics numpy \
 		     imgtool \
-		     protobuf \
+		     protobuf  \
 		     GitPython
 
 # Install BSIM

@@ -20,7 +20,7 @@ sudo docker build \
 	-f Dockerfile \
 	--build-arg UID=$(id -u) \
 	--build-arg GID=$(id -g) \
-	-t swedishembedded/zephyr-build:latest .
+	-t swedishembedded/build:latest .
 
 sudo docker build \
 	-f Dockerfile.user \
