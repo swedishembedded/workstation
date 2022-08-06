@@ -8,8 +8,8 @@ ARG LLVM_VERSION=12
 ARG BSIM_VERSION=v1.0.3
 ARG WGET_ARGS="-q --show-progress --progress=bar:force:noscroll --no-check-certificate"
 
-ARG UID=1000
-ARG GID=1000
+ARG UID 1000
+ARG GID 1000
 
 # Set default shell during Docker image build to bash
 SHELL ["/bin/bash", "-c"]
@@ -83,7 +83,8 @@ RUN apt-get -y update && \
 		valgrind \
 		wget \
 		ovmf \
-		xz-utils
+		xz-utils \
+		bc
 
 # Install multi-lib gcc (x86 only)
 RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
@@ -267,9 +268,9 @@ RUN apt-get clean -y && \
 	rm -rf /var/lib/apt/lists/*
 
 # Create 'user' account
-RUN groupadd -g $GID -o user
+RUN groupadd -g 1000 -o user
 
-RUN useradd -u $UID -m -g user -G plugdev user \
+RUN useradd -u 1000 -m -g user -G plugdev user \
 	&& echo 'user ALL = NOPASSWD: ALL' > /etc/sudoers.d/user \
 	&& chmod 0440 /etc/sudoers.d/user
 

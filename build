@@ -1,28 +1,18 @@
-#!/bin/bash
+#!/bin/sh
 
 # abort on error (note that this is only a fallback. You should still check
 # return codes every single time!)
 set -e
 
-sudo docker image rmi swedishembedded/zephy-build:latest || {
-	echo "No image removed"
-}
-
-# Build the base image
-sudo docker build \
-	-f Dockerfile.base \
-	--build-arg UID=$(id -u) \
-	--build-arg GID=$(id -g) \
-	-t ubuntu:latest .
-
-# Build the main image
-sudo docker build \
+# Build the build image
+docker build \
 	-f Dockerfile \
 	--build-arg UID=$(id -u) \
 	--build-arg GID=$(id -g) \
 	-t swedishembedded/build:latest .
 
-sudo docker build \
+# Build the develop image
+docker build \
 	-f Dockerfile.user \
 	--build-arg UID=$(id -u) \
 	--build-arg GID=$(id -g) \
