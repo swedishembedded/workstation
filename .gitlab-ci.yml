@@ -2,17 +2,36 @@ image: ubuntu-20.04
 
 stages:
  - build
+ - publish
 
 build:
     stage: build
     artifacts:
         paths:
-        expire_in: 2 yrs
+        expire_in: 2 weeks
         when: always
 
     rules:
         - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     before_script:
+        - docker info
     script:
-        - ./build
-        - ./publish
+        - ./scripts/build
+
+publish:
+    stage: publish
+    artifacts:
+        paths:
+        expire_in: 2 weeks
+        when: always
+
+    rules:
+        - if: $CI_PIPELINE_SOURCE == "web"
+        - if: $CI_PIPELINE_SOURCE == "schedule"
+    before_script:
+        - docker login --username "$DOCKER_USERNAME" --password "$DOCKER_TOKEN"
+        - docker info
+    script:
+        - ./scripts/build
+        - ./scripts/publish
+

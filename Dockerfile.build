@@ -8,8 +8,8 @@ ARG LLVM_VERSION=12
 ARG BSIM_VERSION=v1.0.3
 ARG WGET_ARGS="-q --show-progress --progress=bar:force:noscroll --no-check-certificate"
 
-ARG UID=1000
-ARG GID=1000
+ARG UID 1000
+ARG GID 1000
 
 # Set default shell during Docker image build to bash
 SHELL ["/bin/bash", "-c"]
@@ -83,7 +83,8 @@ RUN apt-get -y update && \
 		valgrind \
 		wget \
 		ovmf \
-		xz-utils
+		xz-utils \
+		bc
 
 # Install multi-lib gcc (x86 only)
 RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
@@ -261,29 +262,32 @@ RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
 	cscope
 
+# Other dependencies
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	git-lfs \
+	octave
+
 # Clean up stale packages
 RUN apt-get clean -y && \
 	apt-get autoremove --purge -y && \
 	rm -rf /var/lib/apt/lists/*
 
 # Create 'user' account
-RUN groupadd -g $GID -o user
+RUN groupadd -g 1000 -o user
 
-RUN useradd -u $UID -m -g user -G plugdev user \
+RUN useradd -u 1000 -m -g user -G plugdev user \
 	&& echo 'user ALL = NOPASSWD: ALL' > /etc/sudoers.d/user \
 	&& chmod 0440 /etc/sudoers.d/user
 
 # Run the Zephyr SDK setup script as 'user' in order to ensure that the
 # `Zephyr-sdk` CMake package is located in the package registry under the
 # user's home directory.
-USER user
 
 RUN sudo -E -- bash -c ' \
-	/opt/toolchains/zephyr-sdk-${ZSDK_VERSION}/setup.sh -c && \
-	chown -R user:user /home/user/.cmake \
+	/opt/toolchains/zephyr-sdk-${ZSDK_VERSION}/setup.sh -t all -h -c && \
+	mkdir /home/user/.cmake && chown -R user:user /home/user/.cmake \
 	'
-
-USER root
 
 # Set working directory
 WORKDIR /builds
