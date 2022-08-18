@@ -1,4 +1,0 @@
-#!/bin/sh
-
-docker push swedishembedded/build:latest
-docker push swedishembedded/develop:latest

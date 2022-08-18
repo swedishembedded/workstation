@@ -262,6 +262,12 @@ RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
 	cscope
 
+# Other dependencies
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	git-lfs \
+	octave
+
 # Clean up stale packages
 RUN apt-get clean -y && \
 	apt-get autoremove --purge -y && \
@@ -277,14 +283,11 @@ RUN useradd -u 1000 -m -g user -G plugdev user \
 # Run the Zephyr SDK setup script as 'user' in order to ensure that the
 # `Zephyr-sdk` CMake package is located in the package registry under the
 # user's home directory.
-USER user
 
 RUN sudo -E -- bash -c ' \
-	/opt/toolchains/zephyr-sdk-${ZSDK_VERSION}/setup.sh -c && \
-	chown -R user:user /home/user/.cmake \
+	/opt/toolchains/zephyr-sdk-${ZSDK_VERSION}/setup.sh -t all -h -c && \
+	mkdir /home/user/.cmake && chown -R user:user /home/user/.cmake \
 	'
-
-USER root
 
 # Set working directory
 WORKDIR /builds

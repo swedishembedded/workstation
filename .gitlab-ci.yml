@@ -16,7 +16,7 @@ build:
     before_script:
         - docker info
     script:
-        - ./build
+        - ./scripts/build
 
 publish:
     stage: publish
@@ -32,6 +32,5 @@ publish:
         - docker login --username "$DOCKER_USERNAME" --password "$DOCKER_TOKEN"
         - docker info
     script:
-        - ./build
-        - ./publish
-
+        - ./scripts/build
+        - ./scripts/publish
