@@ -82,7 +82,7 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: .
-        file: Dockerfile
+        file: Dockerfile.build
         platforms: linux/amd64
         push: true
         tags: ${{ steps.meta_ci.outputs.tags }}
@@ -92,7 +92,7 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: .
-        file: Dockerfile.user
+        file: Dockerfile.develop
         platforms: linux/amd64
         push: true
         tags: ${{ steps.meta_developer.outputs.tags }}

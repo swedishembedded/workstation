@@ -6,15 +6,14 @@ set -e
 
 # Build the build image
 docker build \
-	-f Dockerfile \
+	-f Dockerfile.build \
 	--build-arg UID=$(id -u) \
 	--build-arg GID=$(id -g) \
 	-t swedishembedded/build:latest .
 
 # Build the develop image
 docker build \
-	-f Dockerfile.user \
+	-f Dockerfile.develop \
 	--build-arg UID=$(id -u) \
 	--build-arg GID=$(id -g) \
 	-t swedishembedded/develop:latest .
-

@@ -67,6 +67,7 @@ COPY --chown=user:user conf/pygdbinit /home/user/.pygdbinit
 # Install terminal utilities
 RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
+	tree \
 	picocom
 
 # Install debugging tools
