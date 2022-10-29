@@ -268,6 +268,12 @@ RUN apt-get update && \
 	git-lfs \
 	octave
 
+# Kicad for building PCBs on CI
+RUN add-apt-repository --yes ppa:kicad/kicad-6.0-releases && \
+	apt-get update && \
+	apt-get -qy install --install-recommends kicad && \
+	pip3 install --no-compile kibot
+
 # Clean up stale packages
 RUN apt-get clean -y && \
 	apt-get autoremove --purge -y && \

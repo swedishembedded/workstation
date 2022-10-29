@@ -1,4 +1,4 @@
-image: ubuntu-20.04
+image: docker:20.10.16
 
 stages:
  - build
@@ -34,4 +34,3 @@ publish:
     script:
         - ./scripts/build
         - ./scripts/publish
-
