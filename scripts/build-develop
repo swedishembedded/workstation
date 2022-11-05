@@ -1,12 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 
 # abort on error (note that this is only a fallback. You should still check
 # return codes every single time!)
 set -e
 
-# Build the build image
+# Build the develop image
 docker build \
-	-f Dockerfile.build \
+	-f Dockerfile.develop \
 	--build-arg UID=$(id -u) \
 	--build-arg GID=$(id -g) \
-	-t swedishembedded/build:latest .
+	-t swedishembedded/develop:latest .

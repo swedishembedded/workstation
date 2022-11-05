@@ -274,6 +274,10 @@ RUN add-apt-repository --yes ppa:kicad/kicad-6.0-releases && \
 	apt-get -qy install --install-recommends kicad && \
 	pip3 install --no-compile kibot
 
+# OSS CAD Suite (full suite for building verilog stuff)
+RUN wget ${WGET_ARGS} https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2022-11-05/oss-cad-suite-linux-x64-20221105.tgz && \
+	tar xf oss-cad-suite-linux-x64-20221105.tgz -C /opt
+
 # Clean up stale packages
 RUN apt-get clean -y && \
 	apt-get autoremove --purge -y && \
