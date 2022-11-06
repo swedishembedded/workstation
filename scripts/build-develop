@@ -4,9 +4,16 @@
 # return codes every single time!)
 set -e
 
+if [[ "$(which git)" != "" ]]; then
+	TAG=`git describe --tags --first-parent --abbrev=0`
+else
+	TAG="v0.24.5"
+fi
+
 # Build the develop image
 docker build \
 	-f Dockerfile.develop \
+	--build-arg BASE_IMAGE=swedishembedded/build:$TAG \
 	--build-arg UID=$(id -u) \
 	--build-arg GID=$(id -g) \
-	-t swedishembedded/develop:latest .
+	-t swedishembedded/develop:$TAG .
