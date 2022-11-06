@@ -4,7 +4,7 @@
 # return codes every single time!)
 set -e
 
-if [[ "$(which git)" != "" ]]; then
+if [ "$(which git)" != "" ]; then
 	TAG=`git describe --tags --first-parent --abbrev=0`
 else
 	TAG="v0.24.5"
