@@ -10,9 +10,10 @@ else
 	TAG="v0.24.5"
 fi
 
-# Build the build image
+# Build the develop image
 docker build \
-	-f Dockerfile.build \
+	-f Dockerfile.develop \
+	--build-arg BASE_IMAGE=swedishembedded/build:$TAG \
 	--build-arg UID=$(id -u) \
 	--build-arg GID=$(id -g) \
-	-t swedishembedded/build:$TAG .
+	-t swedishembedded/develop:$TAG .
