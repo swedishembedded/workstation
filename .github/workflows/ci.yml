@@ -32,15 +32,6 @@ jobs:
         - 5000:5000
 
     steps:
-    - name: Free up disk space
-      run: |
-        set -x
-        # Delete unnecessary files to free up space
-        df -h
-        sudo rm -rf "/usr/local/share/boost"
-        sudo rm -rf "/usr/local/lib/android"
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-        df -h
 
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
     - name: Setup tmate session on manually-triggered workflows
@@ -87,6 +78,10 @@ jobs:
       uses: docker/setup-buildx-action@v1
       with:
         driver-opts: network=host
+    
+    # Enable tmp tmate debugging to free-up disk space
+    - name: Setup tmp tmate debugging to free-up disk space
+      uses: mxschmitt/action-tmate@v3
 
     - name: Build CI docker image
       uses: docker/build-push-action@v2
@@ -100,7 +95,7 @@ jobs:
     
     # Enable tmate debugging if previous step fails
     - name: Setup tmate session if Build CI docker image step fails
-      if: ${{ failure() }}
+      #if: ${{ failure() }}
       uses: mxschmitt/action-tmate@v3
 
     - name: Build Developer docker image
