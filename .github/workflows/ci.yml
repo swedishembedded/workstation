@@ -32,6 +32,16 @@ jobs:
         - 5000:5000
 
     steps:
+    - name: Free up disk space
+      run: |
+        set -x
+        # Delete unnecessary files to free up space
+        df -h
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "/usr/local/lib/android"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        df -h
+
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
     - name: Setup tmate session on manually-triggered workflows
       uses: mxschmitt/action-tmate@v3
@@ -89,7 +99,7 @@ jobs:
         labels: ${{ steps.meta_ci.outputs.labels }}
     
     # Enable tmate debugging if previous step fails
-    - name: Setup tmate session
+    - name: Setup tmate session if Build CI docker image step fails
       if: ${{ failure() }}
       uses: mxschmitt/action-tmate@v3
 
@@ -104,6 +114,11 @@ jobs:
         labels: ${{ steps.meta_developer.outputs.labels }}
         build-args: |
           BASE_IMAGE=localhost:5000/okmo/build:${{ steps.meta_ci.outputs.version }}
+
+    # Enable tmate debugging if previous step fails
+    - name: Setup tmate session if Build Developer docker image step fails
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
 
     - name: Login to DockerHub
       if: ${{ github.event_name != 'pull_request' }}
