@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-20.04-4c
+    runs-on: ubuntu-20.04
 
     services:
       registry:
@@ -34,14 +34,14 @@ jobs:
       uses: docker/metadata-action@v3
       with:
         images: |
-          localhost:5000/swedishembedded/build
+          localhost:5000/okmo/build
 
     - name: Generate local metadata for Developer image
       id: meta_developer
       uses: docker/metadata-action@v3
       with:
         images: |
-          localhost:5000/swedishembedded/develop
+          localhost:5000/okmo/develop
 
     - name: Generate push metadata for CI image
       if: ${{ github.event_name != 'pull_request' }}
@@ -49,7 +49,7 @@ jobs:
       uses: docker/metadata-action@v3
       with:
         images: |
-          docker.io/swedishembedded/build
+          docker.io/okmo/build
 
     - name: Generate push metadata for Developer image
       if: ${{ github.event_name != 'pull_request' }}
@@ -57,7 +57,7 @@ jobs:
       uses: docker/metadata-action@v3
       with:
         images: |
-          docker.io/swedishembedded/develop
+          docker.io/okmo/develop
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
@@ -87,7 +87,7 @@ jobs:
         tags: ${{ steps.meta_developer.outputs.tags }}
         labels: ${{ steps.meta_developer.outputs.labels }}
         build-args: |
-          BASE_IMAGE=localhost:5000/swedishembedded/build:${{ steps.meta_ci.outputs.version }}
+          BASE_IMAGE=localhost:5000/okmo/build:${{ steps.meta_ci.outputs.version }}
 
     - name: Login to DockerHub
       if: ${{ github.event_name != 'pull_request' }}
@@ -101,12 +101,12 @@ jobs:
       if: ${{ github.event_name != 'pull_request' }}
       uses: akhilerm/tag-push-action@v2.0.0
       with:
-        src: localhost:5000/swedishembedded/build:${{ steps.meta_ci.outputs.version }}
+        src: localhost:5000/okmo/build:${{ steps.meta_ci.outputs.version }}
         dst: ${{ steps.meta_ci_push.outputs.tags }}
 
     - name: Push Developer docker image
       if: ${{ github.event_name != 'pull_request' }}
       uses: akhilerm/tag-push-action@v2.0.0
       with:
-        src: localhost:5000/swedishembedded/develop:${{ steps.meta_developer.outputs.version }}
+        src: localhost:5000/okmo/develop:${{ steps.meta_developer.outputs.version }}
         dst: ${{ steps.meta_developer_push.outputs.tags }}
