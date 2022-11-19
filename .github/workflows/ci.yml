@@ -6,7 +6,13 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
-
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'     
+        required: false
+        default: false
 permissions:
   packages: write
 
@@ -17,7 +23,7 @@ concurrency:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     services:
       registry:
@@ -26,6 +32,11 @@ jobs:
         - 5000:5000
 
     steps:
+    # Enable tmate debugging of manually-triggered workflows if the input option was provided
+    - name: Setup tmate session on manually-triggered workflows
+      uses: mxschmitt/action-tmate@v3
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}    
+    
     - name: Checkout
       uses: actions/checkout@v2
 
@@ -76,6 +87,11 @@ jobs:
         push: true
         tags: ${{ steps.meta_ci.outputs.tags }}
         labels: ${{ steps.meta_ci.outputs.labels }}
+    
+    # Enable tmate debugging if previous step fails
+    - name: Setup tmate session
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
 
     - name: Build Developer docker image
       uses: docker/build-push-action@v2
