@@ -83,8 +83,8 @@ jobs:
           file: Dockerfile.develop
           push: true
           tags: okmo/develop:latest
-          cache-from: type=registry,ref=okmo/develop:buildcache
-          cache-to: type=registry,ref=okmo/develop:buildcache,mode=max
+          cache-from: type=registry,ref=okmo/develop:developcache
+          cache-to: type=registry,ref=okmo/develop:developcache,mode=max
 
 # jobs:
 #   build:
