@@ -42,6 +42,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
+          file: Dockerfile.develop
           push: true
           tags: okmo/develop:latest
           cache-from: type=registry,ref=okmo/develop:buildcache
