@@ -1,5 +1,5 @@
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-okmo/build:main}
+FROM ${BASE_IMAGE:-okmo/build:latest}
 
 ARG EMACS_VERSION=28.1
 
