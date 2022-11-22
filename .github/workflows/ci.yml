@@ -22,7 +22,7 @@ env:
   DOCKER_PUBLISH: true
 
 jobs:
-  docker:
+  build:
     runs-on: ubuntu-latest
     steps:
 
@@ -73,7 +73,7 @@ jobs:
         with:
           context: .
           file: Dockerfile.build
-          push: $DOCKER_PUBLISH
+          push: ${{ env.DOCKER_PUBLISH }}
           tags: okmo/build:latest
           cache-from: type=registry,ref=okmo/build:buildcache
           cache-to: type=registry,ref=okmo/build:buildcache,mode=max
@@ -88,7 +88,7 @@ jobs:
         with:
           context: .
           file: Dockerfile.develop
-          push: $DOCKER_PUBLISH
+          push: ${{ env.DOCKER_PUBLISH }}
           tags: okmo/develop:latest
           cache-from: type=registry,ref=okmo/develop:developcache
           cache-to: type=registry,ref=okmo/develop:developcache,mode=max
