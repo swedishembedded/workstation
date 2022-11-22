@@ -77,8 +77,8 @@ jobs:
         push: true
         tags: ${{ steps.meta_developer.outputs.tags }}
         labels: ${{ steps.meta_developer.outputs.labels }}
-        # build-args: |
-        #   BASE_IMAGE=okmo/build:main
+        build-args: |
+          BASE_IMAGE=okmo/develop:main
 
     - name: Login to DockerHub
       if: ${{ github.event_name != 'pull_request' }}
