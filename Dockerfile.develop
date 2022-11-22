@@ -80,8 +80,7 @@ RUN gem install tmuxinator
 
 # Install vim and nano
 RUN apt-get update && \
-	apt-get install -y vim \
-	apt-get install -y nano
+	apt-get install -y vim nano
 
 # Clean up stale packages
 RUN apt-get clean -y && \
