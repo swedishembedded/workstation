@@ -2,95 +2,47 @@ name: Develop
 
 on:
   workflow_dispatch:
-
-permissions:
-  packages: write
-
-concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: true
-
-jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-20.04
-
-    services:
-      registry:
-        image: registry:2
-        ports:
-        - 5000:5000
-
-    steps:
-
-    - name: Free up disk space
-      run: |
-        set -x
-        # Delete unnecessary files to free up space
-        # Workaround to provide additional free space for testing.
-        # https://github.com/actions/runner-images/issues/2840
-        df -h
-        sudo apt-get remove -y '^dotnet-.*'
-        sudo apt-get remove -y 'php.*'
-        sudo apt-get remove -y azure-cli google-cloud-sdk google-chrome-stable firefox powershell mono-devel android-sdk
-        sudo apt-get autoremove -y
-        sudo apt-get clean
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        sudo rm -rf "/usr/local/share/boost"
-        sudo rm -rf "/usr/local/lib/android"
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-        df -h
         
-    - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Generate local metadata for Developer image
-      id: meta_developer
-      uses: docker/metadata-action@v3
-      with:
-        images: |
-          localhost:5000/okmo/develop
-
-    - name: Generate push metadata for Developer image
-      if: ${{ github.event_name != 'pull_request' }}
-      id: meta_developer_push
-      uses: docker/metadata-action@v3
-      with:
-        images: |
-          docker.io/okmo/develop
-
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-      with:
-        driver-opts: network=host
-
-    - name: Build Developer docker image
-      uses: docker/build-push-action@v2
-      with:
-        context: .
-        file: Dockerfile.develop
-        platforms: linux/amd64
-        push: true
-        tags: ${{ steps.meta_developer.outputs.tags }}
-        labels: ${{ steps.meta_developer.outputs.labels }}
-        build-args: |
-          BASE_IMAGE=okmo/develop:main
-
-    - name: Login to DockerHub
-      if: ${{ github.event_name != 'pull_request' }}
-      uses: docker/login-action@v1
-      with:
-        registry: docker.io
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Push Developer docker image
-      if: ${{ github.event_name != 'pull_request' }}
-      uses: akhilerm/tag-push-action@v2.0.0
-      with:
-        src: localhost:5000/okmo/develop:${{ steps.meta_developer.outputs.version }}
-        dst: ${{ steps.meta_developer_push.outputs.tags }}
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free up disk space
+        run: |
+          set -x
+          # Delete unnecessary files to free up space
+          # Workaround to provide additional free space for testing.
+          # https://github.com/actions/runner-images/issues/2840
+          df -h
+          sudo apt-get remove -y '^dotnet-.*'
+          sudo apt-get remove -y 'php.*'
+          sudo apt-get remove -y azure-cli google-cloud-sdk google-chrome-stable firefox powershell mono-devel android-sdk
+          sudo apt-get autoremove -y
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "/usr/local/lib/android"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: okmo/develop:latest
+          cache-from: type=registry,ref=okmo/develop:buildcache
+          cache-to: type=registry,ref=okmo/develop:buildcache,mode=max
