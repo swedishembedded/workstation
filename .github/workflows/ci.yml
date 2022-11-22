@@ -18,10 +18,19 @@ concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DOCKER_PUBLISH: true
+
 jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
+
+      - name: Disable docker publishing if in PR build
+        if: ${{ github.event_name == 'pull_request' }}
+        run: echo "Docker publishing in PR is disabled"
+        env: 
+          DOCKER_PUBLISH: false
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session on manually-triggered workflows
@@ -64,7 +73,7 @@ jobs:
         with:
           context: .
           file: Dockerfile.build
-          push: true
+          push: $DOCKER_PUBLISH
           tags: okmo/build:latest
           cache-from: type=registry,ref=okmo/build:buildcache
           cache-to: type=registry,ref=okmo/build:buildcache,mode=max
@@ -79,7 +88,7 @@ jobs:
         with:
           context: .
           file: Dockerfile.develop
-          push: true
+          push: $DOCKER_PUBLISH
           tags: okmo/develop:latest
           cache-from: type=registry,ref=okmo/develop:developcache
           cache-to: type=registry,ref=okmo/develop:developcache,mode=max
