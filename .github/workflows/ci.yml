@@ -61,11 +61,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push CI image
+      - name: Build and push CI docker image
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: Dockerfile.develop
+          file: Dockerfile.build
           push: true
           tags: okmo/build:latest
           cache-from: type=registry,ref=okmo/build:buildcache
