@@ -83,7 +83,7 @@ RUN apt-get update && \
 	apt-get install -y vim nano
 
 # install renode-run
-RUN pip3 install renode-run
+RUN pip3 install --upgrade git+https://github.com/antmicro/renode-run.git
 
 # Clean up stale packages
 RUN apt-get clean -y && \
