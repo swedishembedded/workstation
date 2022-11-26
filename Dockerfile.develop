@@ -82,6 +82,9 @@ RUN gem install tmuxinator
 RUN apt-get update && \
 	apt-get install -y vim nano
 
+# install renode-run
+RUN pip3 install renode-run
+
 # Clean up stale packages
 RUN apt-get clean -y && \
 	apt-get autoremove --purge -y && \
