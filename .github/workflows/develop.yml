@@ -44,6 +44,6 @@ jobs:
           context: .
           file: Dockerfile.develop
           push: true
-          tags: okmo/develop:latest
-          cache-from: type=registry,ref=okmo/develop:buildcache
-          cache-to: type=registry,ref=okmo/develop:buildcache,mode=max
+          tags: swedishembedded/develop:latest
+          cache-from: type=registry,ref=swedishembedded/develop:buildcache
+          cache-to: type=registry,ref=swedishembedded/develop:buildcache,mode=max

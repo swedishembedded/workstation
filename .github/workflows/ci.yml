@@ -74,9 +74,9 @@ jobs:
           context: .
           file: Dockerfile.build
           push: ${{ env.DOCKER_PUBLISH }}
-          tags: okmo/build:latest
-          cache-from: type=registry,ref=okmo/build:buildcache
-          cache-to: type=registry,ref=okmo/build:buildcache,mode=max
+          tags: swedishembedded/build:latest
+          cache-from: type=registry,ref=swedishembedded/build:buildcache
+          cache-to: type=registry,ref=swedishembedded/build:buildcache,mode=max
 
       # Enable tmate debugging if previous step fails
       - name: Setup tmate session if previous step fails
@@ -89,6 +89,6 @@ jobs:
           context: .
           file: Dockerfile.develop
           push: ${{ env.DOCKER_PUBLISH }}
-          tags: okmo/develop:latest
-          cache-from: type=registry,ref=okmo/develop:developcache
-          cache-to: type=registry,ref=okmo/develop:developcache,mode=max
+          tags: swedishembedded/develop:latest
+          cache-from: type=registry,ref=swedishembedded/develop:developcache
+          cache-to: type=registry,ref=swedishembedded/develop:developcache,mode=max
