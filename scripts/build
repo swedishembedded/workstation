@@ -10,6 +10,8 @@ else
 	TAG="v0.24.5"
 fi
 
+echo "Building image: $TAG"
+
 # Build the build image
 docker build \
 	-f Dockerfile.build \
