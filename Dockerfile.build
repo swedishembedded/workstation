@@ -45,9 +45,10 @@ RUN gem install \
 # Node JS
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 
-#RUN apt-get update && \
-#	apt-get -qy install --no-install-recommends \
-#	nodejs
+# This will install nodejs and npm after installer finished
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	nodejs
 
 # Ruby dependencies for CMock
 RUN gem install \
