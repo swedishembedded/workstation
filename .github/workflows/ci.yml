@@ -6,107 +6,85 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
-
-permissions:
-  packages: write
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'     
+        required: false
+        default: false
 
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DOCKER_PUBLISH: true
+
 jobs:
   build:
-    name: Build
-    runs-on: ubuntu-20.04-4c
-
-    services:
-      registry:
-        image: registry:2
-        ports:
-        - 5000:5000
-
+    runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
 
-    - name: Generate local metadata for CI image
-      id: meta_ci
-      uses: docker/metadata-action@v3
-      with:
-        images: |
-          localhost:5000/swedishembedded/build
+      - name: Disable docker publishing if in PR build
+        if: ${{ github.event_name == 'pull_request' }}
+        run: echo "Docker publishing in PR is disabled"
+        env:
+          DOCKER_PUBLISH: false
 
-    - name: Generate local metadata for Developer image
-      id: meta_developer
-      uses: docker/metadata-action@v3
-      with:
-        images: |
-          localhost:5000/swedishembedded/develop
+      # Enable tmate debugging of manually-triggered workflows if the input option was provided
+      - name: Setup tmate session on manually-triggered workflows
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+      - name: Free up disk space
+        run: |
+          set -x
+          # Delete unnecessary files to free up space
+          # Workaround to provide additional free space for testing.
+          # https://github.com/actions/runner-images/issues/2840
+          df -h
+          sudo apt-get remove -y '^dotnet-.*'
+          sudo apt-get remove -y 'php.*'
+          sudo apt-get remove -y azure-cli google-cloud-sdk google-chrome-stable firefox powershell mono-devel android-sdk
+          sudo apt-get autoremove -y
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "/usr/local/lib/android"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Generate push metadata for CI image
-      if: ${{ github.event_name != 'pull_request' }}
-      id: meta_ci_push
-      uses: docker/metadata-action@v3
-      with:
-        images: |
-          docker.io/swedishembedded/build
+      - name: Build and push CI docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile.build
+          push: ${{ env.DOCKER_PUBLISH }}
+          tags: swedishembedded/build:latest
+          cache-from: type=registry,ref=swedishembedded/build:buildcache
+          cache-to: type=registry,ref=swedishembedded/build:buildcache,mode=max
 
-    - name: Generate push metadata for Developer image
-      if: ${{ github.event_name != 'pull_request' }}
-      id: meta_developer_push
-      uses: docker/metadata-action@v3
-      with:
-        images: |
-          docker.io/swedishembedded/develop
+      # Enable tmate debugging if previous step fails
+      - name: Setup tmate session if previous step fails
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
 
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-      with:
-        driver-opts: network=host
-
-    - name: Build CI docker image
-      uses: docker/build-push-action@v2
-      with:
-        context: .
-        file: Dockerfile.build
-        platforms: linux/amd64
-        push: true
-        tags: ${{ steps.meta_ci.outputs.tags }}
-        labels: ${{ steps.meta_ci.outputs.labels }}
-
-    - name: Build Developer docker image
-      uses: docker/build-push-action@v2
-      with:
-        context: .
-        file: Dockerfile.develop
-        platforms: linux/amd64
-        push: true
-        tags: ${{ steps.meta_developer.outputs.tags }}
-        labels: ${{ steps.meta_developer.outputs.labels }}
-        build-args: |
-          BASE_IMAGE=localhost:5000/swedishembedded/build:${{ steps.meta_ci.outputs.version }}
-
-    - name: Login to DockerHub
-      if: ${{ github.event_name != 'pull_request' }}
-      uses: docker/login-action@v1
-      with:
-        registry: docker.io
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Push CI docker image
-      if: ${{ github.event_name != 'pull_request' }}
-      uses: akhilerm/tag-push-action@v2.0.0
-      with:
-        src: localhost:5000/swedishembedded/build:${{ steps.meta_ci.outputs.version }}
-        dst: ${{ steps.meta_ci_push.outputs.tags }}
-
-    - name: Push Developer docker image
-      if: ${{ github.event_name != 'pull_request' }}
-      uses: akhilerm/tag-push-action@v2.0.0
-      with:
-        src: localhost:5000/swedishembedded/develop:${{ steps.meta_developer.outputs.version }}
-        dst: ${{ steps.meta_developer_push.outputs.tags }}
+      - name: Build and push develop image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile.develop
+          push: ${{ env.DOCKER_PUBLISH }}
+          tags: swedishembedded/develop:latest
+          cache-from: type=registry,ref=swedishembedded/develop:developcache
+          cache-to: type=registry,ref=swedishembedded/develop:developcache,mode=max

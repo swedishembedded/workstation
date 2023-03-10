@@ -4,13 +4,13 @@ FROM ${BASE_IMAGE:-swedishembedded/build:latest}
 ARG EMACS_VERSION=28.1
 
 RUN mkdir -p /build/platform && \
-		chown -R user:user /build
+	chown -R user:user /build
 
 USER user
 RUN cd /build/platform && \
-		git clone https://github.com/swedishembedded/sdk.git && \
-		cd sdk && \
-		./scripts/init
+	git clone https://github.com/swedishembedded/sdk.git && \
+	cd sdk && \
+	./scripts/init
 USER root
 
 # Install emacs dependencies
@@ -36,11 +36,11 @@ RUN wget -q https://ftpmirror.gnu.org/emacs/emacs-${EMACS_VERSION}.tar.gz https:
 	tar zxf emacs-${EMACS_VERSION}.tar.gz && \
 	cd emacs-${EMACS_VERSION} && \
 	./configure \
-		--with-x-toolkit=no \
-		--with-xpm=ifavailable \
-		--with-jpeg=ifavailable \
-		--with-gif=ifavailable \
-		--with-tiff=ifavailable \
+	--with-x-toolkit=no \
+	--with-xpm=ifavailable \
+	--with-jpeg=ifavailable \
+	--with-gif=ifavailable \
+	--with-tiff=ifavailable \
 	&& \
 	make && \
 	make install && \
@@ -50,12 +50,12 @@ RUN wget -q https://ftpmirror.gnu.org/emacs/emacs-${EMACS_VERSION}.tar.gz https:
 USER user
 # Install DooM emacs
 RUN git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.emacs.d && \
-		~/.emacs.d/bin/doom install --no-env --no-fonts
+	~/.emacs.d/bin/doom install --no-env --no-fonts
 
 # Add configuration
 COPY --chown=user:user conf/doom /home/user/.doom.d/
 RUN ~/.emacs.d/bin/doom env && \
-		~/.emacs.d/bin/doom upgrade
+	~/.emacs.d/bin/doom upgrade
 USER root
 
 COPY --chown=user:user conf/tmux/tmux.conf /home/user/.tmux.conf
@@ -78,6 +78,13 @@ RUN apt-get update && \
 # Install tmuxinator
 RUN gem install tmuxinator
 
+# Install vim and nano
+RUN apt-get update && \
+	apt-get install -y vim nano
+
+# install renode-run
+RUN pip3 install --upgrade git+https://github.com/antmicro/renode-run.git
+
 # Clean up stale packages
 RUN apt-get clean -y && \
 	apt-get autoremove --purge -y && \
@@ -94,6 +101,7 @@ USER user
 # Configure environment variables
 ENV DISPLAY=:0
 ENV ZEPHYR_BASE=/build/platform/zephyr
+ENV CMAKE_PREFIX_PATH=/opt/toolchains
 
 # Set working directory
 WORKDIR /build/
