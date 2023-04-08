@@ -1,0 +1,26 @@
+#!/bin/bash
+
+ROOT="$(realpath $(dirname $BASH_SOURCE)/..)"
+
+sudo apt update
+sudo apt install \
+	neovim \
+	tmux \
+	i3 \
+	git \
+	curl \
+	gnome-tweaks \
+	chromium-browser \
+	xfonts-terminus \
+	net-tools \
+	tig
+
+# Enable terminus bitmap fonts
+sudo rm /etc/fonts/conf.d/70-yes-bitmaps.conf
+sudo ln -s /etc/fonts/conf.d/conf.avail/70-no-bitmaps.conf /etc/fonts/conf.d/
+
+# Install vim plug
+curl -fLo ~/.config/nvim/autoload/plug.vim --create-dirs \
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+mkdir -p ~/.config/nvim/
+cp -R $ROOT/conf/nvim/* ~/.config/nvim/
