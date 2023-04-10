@@ -24,21 +24,65 @@ set noexpandtab
 
 set mouse=a
 
+" Load vim-plug
+if empty(glob('~/.local/share/nvim/site/autoload/plug.vim'))
+  silent !curl -fLo ~/.config/nvim/autoload/plug.vim --create-dirs
+    \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+endif
+
 call plug#begin()
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'neovim/nvim-lspconfig'
+Plug 'airblade/vim-gitgutter'
+Plug 'akinsho/nvim-bufferline.lua'
 Plug 'hrsh7th/nvim-compe'
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
 Plug 'preservim/nerdtree', { 'on': 'NERDTreeToggle' }
 Plug 'tpope/vim-fireplace', { 'for': 'clojure' }
+Plug 'tpope/vim-fugitive'
+Plug 'tpope/vim-dispatch'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
 Plug 'p00f/nvim-ts-rainbow'
 Plug 'morhetz/gruvbox'
+Plug 'Yggdroot/indentLine'
+Plug 'dense-analysis/ale'
+Plug 'vim-scripts/c.vim'
+Plug 'voldikss/vim-floaterm'
+Plug 'puremourning/vimspector'
+Plug 'vimwiki/vimwiki'
+Plug 'dhruvasagar/vim-dotoo'
+Plug 'asciidoc/asciidoctor-vim'
 call plug#end()
+
+" Set Vim-dotoo settings
+let g:dotoo#agenda#files = ['~/vimwiki/*.dotoo']
+
+" Set Vimwiki settings
+let g:vimwiki_list = [{'path': '~/vimwiki/', 'syntax': 'markdown', 'ext': '.md'}]
 
 " Set the color scheme
 colorscheme gruvbox
 set background=dark " Optional: change to 'light' for the light version
+
+" Configure coc.nvim for autocompletion
+let g:coc_global_extensions = ['coc-clangd']
+let g:clangd_install_prefix = '/usr/'
+let g:clangd_command = ['clangd', '--clang-tidy', '--background-index', '--header-insertion-decorators=0', '--completion-style=detailed']
+
+" Configure gitgutter
+let g:gitgutter_enabled = 1
+
+" Configure bufferline
+lua << EOF
+require'bufferline'.setup{
+  options = {
+    modified_icon = '●',
+    buffer_close_icon = '',
+    show_buffer_close_icons = false,
+  },
+}
+EOF
 
 " Setup lsp
 " Enable the C language server (clangd)
@@ -49,7 +93,9 @@ require'lspconfig'.clangd.setup{
     end,
     flags = {
         debounce_text_changes = 150,
-    }
+    },
+    cmd = { "clangd", "--background-index" },
+    filetypes = { "c", "cpp" },
 }
 EOF
 
@@ -95,6 +141,7 @@ require'nvim-treesitter.configs'.setup {
     ensure_installed = "c", -- one of "all", "maintained" (parsers with maintainers), or a list of languages
     highlight = {
         enable = true, -- false will disable the whole extension
+		use_languagetree = true,
         disable = {}, -- list of language that will be disabled
     },
     rainbow = {
@@ -116,16 +163,32 @@ autocmd InsertLeave * match ExtraWhitespace /\s\+$/
 autocmd BufWinLeave * call clearmatches()
 let c_space_errors = 1
 
+" Configure floaterm
+nnoremap <C-t> :FloatermToggle<CR>
+
 " Configure NERDTree
 let g:NERDTreeWinSize = 40
 nnoremap <C-n> :NERDTreeToggle<CR>
 let NERDTreeIgnore = ['\.o$', '\.obj$', '\.a$', '\.so$', '\.out$']
 let NERDTreeShowHidden = 1
-let NERDTreeQuitOnOpen = 1
 
 " Configure vim-airline
 let g:airline_powerline_fonts = 1
 let g:airline_theme = 'luna'
+
+" AsciiDoc Folding
+autocmd FileType asciidoc setlocal foldmethod=expr
+autocmd FileType asciidoc setlocal foldexpr=AsciidoctorVimFoldLevel(v:lnum)
+
+" Clang format
+function! ClangFormat()
+    let l:lines = 'lines=' . (line("'>")-line("'<")+1)
+    let l:format_command = 'clang-format -style=file -assume-filename=% -'.l:lines
+    execute ":'<,'>! ".l:format_command
+endfunction
+
+nnoremap <leader>cf :call ClangFormat()<CR>
+vnoremap <leader>cf :call ClangFormat()<CR>
 
 set nobackup
 set noswapfile

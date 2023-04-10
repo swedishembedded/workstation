@@ -6,6 +6,7 @@ sudo apt update
 sudo apt install \
 	neovim \
 	tmux \
+	meld \
 	i3 \
 	git \
 	curl \
@@ -15,12 +16,22 @@ sudo apt install \
 	net-tools \
 	tig
 
+# Asciidoctor tools
+sudo gem install asciidoctor-html5s
+
 # Enable terminus bitmap fonts
 sudo rm /etc/fonts/conf.d/70-yes-bitmaps.conf
 sudo ln -s /etc/fonts/conf.d/conf.avail/70-no-bitmaps.conf /etc/fonts/conf.d/
 
-# Install vim plug
+# Vim configuration
+pip3 install pynvim neovim-remote
 curl -fLo ~/.config/nvim/autoload/plug.vim --create-dirs \
     https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 mkdir -p ~/.config/nvim/
 cp -R $ROOT/conf/nvim/* ~/.config/nvim/
+nvim --headless +PlugInstall +qall
+nvim --headless +CocInstall coc-clangd +qall
+
+# i3 setup
+mkdir -p ~/.config/i3/
+cp -R $ROOT/conf/i3/* ~/.config/i3/
