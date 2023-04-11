@@ -10,6 +10,7 @@ sudo apt install \
 	i3 \
 	git \
 	curl \
+	docker.io \
 	gnome-tweaks \
 	chromium-browser \
 	xfonts-terminus \
@@ -35,3 +36,6 @@ nvim --headless +CocInstall coc-clangd +qall
 # i3 setup
 mkdir -p ~/.config/i3/
 cp -R $ROOT/conf/i3/* ~/.config/i3/
+
+# Docker post setup
+sudo usermod -aG docker $USER

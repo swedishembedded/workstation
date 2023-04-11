@@ -2,6 +2,7 @@ ARG BASE_IMAGE
 FROM ${BASE_IMAGE:-zephyrprojectrtos/ci:latest}
 
 ARG WGET_ARGS="-q --show-progress --progress=bar:force:noscroll --no-check-certificate"
+ARG LEDGER_VERSION=3.3.2
 
 # Set default shell during Docker image build to bash
 SHELL ["/bin/bash", "-c"]
@@ -74,9 +75,9 @@ RUN apt-get update && \
 	libboost-test-dev libedit-dev libgmp3-dev libmpfr-dev texinfo tzdata
 
 # Ledger
-RUN wget https://github.com/ledger/ledger/archive/refs/tags/v3.2.1.tar.gz && \
-	tar -xzf v3.2.1.tar.gz && \
-	pushd ledger-3.2.1 && \
+RUN wget https://github.com/ledger/ledger/archive/refs/tags/v${LEDGER_VERSION}.tar.gz && \
+	tar -xzf v${LEDGER_VERSION}.tar.gz && \
+	pushd ledger-${LEDGER_VERSION} && \
 	mkdir build && (cd build; cmake ..) && \
 	make -C build && \
 	sudo make -C build install

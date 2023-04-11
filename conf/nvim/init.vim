@@ -34,7 +34,6 @@ call plug#begin()
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'neovim/nvim-lspconfig'
 Plug 'airblade/vim-gitgutter'
-Plug 'akinsho/nvim-bufferline.lua'
 Plug 'hrsh7th/nvim-compe'
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
 Plug 'preservim/nerdtree', { 'on': 'NERDTreeToggle' }
@@ -70,19 +69,12 @@ let g:coc_global_extensions = ['coc-clangd']
 let g:clangd_install_prefix = '/usr/'
 let g:clangd_command = ['clangd', '--clang-tidy', '--background-index', '--header-insertion-decorators=0', '--completion-style=detailed']
 
+" Ale configuration
+" Ignore git commit when linting (highly annoying)
+let g:ale_pattern_options = {'COMMIT_EDITMSG$': {'ale_linters': [], 'ale_fixers': []}}
+
 " Configure gitgutter
 let g:gitgutter_enabled = 1
-
-" Configure bufferline
-lua << EOF
-require'bufferline'.setup{
-  options = {
-    modified_icon = '●',
-    buffer_close_icon = '',
-    show_buffer_close_icons = false,
-  },
-}
-EOF
 
 " Setup lsp
 " Enable the C language server (clangd)
@@ -169,7 +161,7 @@ nnoremap <C-t> :FloatermToggle<CR>
 " Configure NERDTree
 let g:NERDTreeWinSize = 40
 nnoremap <C-n> :NERDTreeToggle<CR>
-let NERDTreeIgnore = ['\.o$', '\.obj$', '\.a$', '\.so$', '\.out$']
+let NERDTreeIgnore = ['\.o$', '\.obj$', '\.a$', '\.so$', '\.out$', '\.git$']
 let NERDTreeShowHidden = 1
 
 " Configure vim-airline
