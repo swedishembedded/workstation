@@ -21,8 +21,10 @@ set shiftwidth=4
 set autoindent
 " We do not want our tabs demoted into spaces!
 set noexpandtab
-
+" Enable mouse motion and resizing
 set mouse=a
+" Show line numbers
+set number
 
 " Load vim-plug
 if empty(glob('~/.local/share/nvim/site/autoload/plug.vim'))
@@ -31,6 +33,14 @@ if empty(glob('~/.local/share/nvim/site/autoload/plug.vim'))
 endif
 
 call plug#begin()
+Plug 'vim-scripts/DoxygenToolkit.vim'
+Plug 'lervag/vimtex'
+Plug 'tpope/vim-commentary'
+Plug 'majutsushi/tagbar'
+Plug 'mbbill/undotree'
+Plug 'jceb/vim-orgmode'
+Plug 'tpope/vim-speeddating'
+Plug 'habamax/vim-asciidoctor'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'neovim/nvim-lspconfig'
 Plug 'airblade/vim-gitgutter'
@@ -51,11 +61,30 @@ Plug 'voldikss/vim-floaterm'
 Plug 'puremourning/vimspector'
 Plug 'vimwiki/vimwiki'
 Plug 'dhruvasagar/vim-dotoo'
-Plug 'asciidoc/asciidoctor-vim'
 call plug#end()
+
+" Latex editing
+let g:tex_flavor = 'latex'
+
+" Tagbar
+nmap <F8> :TagbarToggle<CR>
+
+" Undootree
+nmap <F5> :UndotreeToggle<CR>
+
+" Org mode
+let g:orgmode_enabled = 1
+nnoremap <Tab> :OrgCycle<CR>
+let g:org_agenda_files=['~/board.org']
+
+" Speeddating
+let g:speeddating_no_mappings = 1
+nmap <C-a> <Plug>SpeedDatingIncrement
+nmap <C-x> <Plug>SpeedDatingDecrement
 
 " Set Vim-dotoo settings
 let g:dotoo#agenda#files = ['~/vimwiki/*.dotoo']
+au BufRead,BufNewFile *.dotoo set filetype=dotoo
 
 " Set Vimwiki settings
 let g:vimwiki_list = [{'path': '~/vimwiki/', 'syntax': 'markdown', 'ext': '.md'}]
@@ -72,6 +101,45 @@ let g:clangd_command = ['clangd', '--clang-tidy', '--background-index', '--heade
 " Ale configuration
 " Ignore git commit when linting (highly annoying)
 let g:ale_pattern_options = {'COMMIT_EDITMSG$': {'ale_linters': [], 'ale_fixers': []}}
+let g:ale_linters = {
+\	'yaml': ['yamllint'],
+\	'cpp': ['clangtidy'],
+\	'c': ['clangtidy']}
+let g:ale_fixers = {
+\	'cpp': ['clang-format'],
+\	'c': ['clang-format']}
+
+let g:ale_cpp_clangtidy_options = '-checks=-*,cppcoreguidelines-*'
+let g:ale_cpp_clangtidy_checks = ['readability-*,performance-*,bugprone-*,misc-*']
+let g:ale_cpp_clangtidy_checks += ['clang-analyzer-cplusplus-doc-comments']
+
+let g:ale_c_clangtidy_options = '-checks=-*,cppcoreguidelines-*'
+let g:ale_c_clangtidy_checks = ['readability-*,performance-*,bugprone-*,misc-*']
+let g:ale_c_clangtidy_checks += ['-readability-function-cognitive-complexity']
+let g:ale_c_clangtidy_checks += ['-readability-identifier-length']
+let g:ale_c_clangtidy_checks += ['-misc-redundant-expression']
+let g:ale_c_build_dir_names = ['build', 'release', 'debug']
+let g:ale_set_balloons=1
+
+function! SetClangTidyConfig()
+    let l:config_file = findfile('.clang-tidy', expand('%:p:h').';')
+    if !empty(l:config_file)
+        let g:ale_c_clangtidy_options = '--config=' . l:config_file
+        let g:ale_cpp_clangtidy_options = '--config=' . l:config_file
+    endif
+endfunction
+
+autocmd BufRead,BufNewFile *.c,*.cpp,*.h,*.hpp call SetClangTidyConfig()
+
+" Clang format
+function! FormatCode()
+    let l:filetype = &filetype
+    if l:filetype == 'c' || l:filetype == 'cpp' || l:filetype == 'objc' || l:filetype == 'objcpp'
+        silent %!clang-format
+    endif
+endfunction
+
+nnoremap <leader>f :call FormatCode()<CR>
 
 " Configure gitgutter
 let g:gitgutter_enabled = 1
@@ -79,7 +147,8 @@ let g:gitgutter_enabled = 1
 " Setup lsp
 " Enable the C language server (clangd)
 lua << EOF
-require'lspconfig'.clangd.setup{
+local nvim_lsp = require'lspconfig'
+nvim_lsp.clangd.setup{
     on_attach = function(client, bufnr)
         require'completion'.on_attach(client, bufnr)
     end,
@@ -89,7 +158,40 @@ require'lspconfig'.clangd.setup{
     cmd = { "clangd", "--background-index" },
     filetypes = { "c", "cpp" },
 }
+nvim_lsp.robotframework_ls.setup({})
+
+-- Enable diagnostics
+vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(
+  vim.lsp.diagnostic.on_publish_diagnostics, {
+    virtual_text = true,
+    signs = true,
+    update_in_insert = false,
+  }
+)
 EOF
+
+" Make sure we can popup the hover using <leader>s
+nnoremap <leader>s :call v:lua.vim.lsp.buf.hover()<CR>
+inoremap <leader>s :call v:lua.vim.lsp.buf.hover()<CR>
+
+" Completion setup
+let g:compe = {}
+let g:compe.source = {}
+let g:compe.source.path = v:true
+let g:compe.source.buffer = v:true
+let g:compe.source.calc = v:true
+let g:compe.source.nvim_lsp = v:true
+let g:compe.source.nvim_lua = v:true
+let g:compe.source.omni = v:true
+let g:compe.source.vsnip = v:true
+let g:compe.source.ultisnips = v:true
+let g:compe.source.tabnine = v:true
+let g:compe.source.buffer = v:true
+
+" Keybinds
+inoremap <silent><expr> <C-Space> compe#complete()
+inoremap <silent><expr> <CR>      compe#confirm('<CR>')
+inoremap <silent><expr> <C-e>     compe#close('<C-e>')
 
 " Configure nvim-compe
 lua << EOF
