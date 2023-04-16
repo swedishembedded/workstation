@@ -1,0 +1,11 @@
+#!/bin/bash
+
+ROOT="$(realpath $(dirname $BASH_SOURCE)/../..)"
+
+sudo apt-get update && sudo apt-get install -qy \
+	i3 \
+	xfonts-terminus
+
+# i3 setup
+mkdir -p ~/.config/i3/
+cp -R $ROOT/conf/i3/* ~/.config/i3/

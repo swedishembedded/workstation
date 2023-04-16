@@ -41,7 +41,8 @@ RUN apt-get update && \
 	curl aspell aspell-en
 
 RUN gem install \
-	asciidoctor-pdf
+	asciidoctor-pdf \
+	asciidoctor-html5s
 
 # Node JS
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -

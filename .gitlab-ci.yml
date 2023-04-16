@@ -1,36 +1,89 @@
+---
 image: docker:20.10.16
 
 stages:
- - build
- - publish
+  - bootstrap
+  - build
+  - publish
+
+.sudo:
+  before_script:
+    - apt-get update && apt-get install -qy sudo
+    - echo 'debconf debconf/frontend select Noninteractive' | sudo
+      debconf-set-selections
+
+bootstrap docker:
+  image: ubuntu:22.04
+  extends: .sudo
+  stage: bootstrap
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - ./scripts/bootstrap/docker
+
+bootstrap i3:
+  image: ubuntu:22.04
+  stage: bootstrap
+  extends: .sudo
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - ./scripts/bootstrap/i3
+
+bootstrap nvim:
+  image: ubuntu:22.04
+  stage: bootstrap
+  extends: .sudo
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - ./scripts/bootstrap/nvim
+
+bootstrap tmux:
+  image: ubuntu:22.04
+  stage: bootstrap
+  extends: .sudo
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - ./scripts/bootstrap/tmux
+
+bootstrap sdk:
+  image: ubuntu:22.04
+  stage: bootstrap
+  extends: .sudo
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - ./scripts/bootstrap/sdk
 
 build:
-    stage: build
-    artifacts:
-        paths:
-        expire_in: 2 weeks
-        when: always
-
-    rules:
-        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    before_script:
-        - docker info
-    script:
-        - ./scripts/build
+  stage: build
+  when: manual
+  artifacts:
+    paths:
+    expire_in: 2 weeks
+    when: always
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  before_script:
+    - docker info
+  script:
+    - ./scripts/build
 
 publish:
-    stage: publish
-    artifacts:
-        paths:
-        expire_in: 2 weeks
-        when: always
+  stage: publish
+  artifacts:
+    paths:
+    expire_in: 2 weeks
+    when: always
 
-    rules:
-        - if: $CI_PIPELINE_SOURCE == "web"
-        - if: $CI_PIPELINE_SOURCE == "schedule"
-    before_script:
-        - docker login --username "$DOCKER_USERNAME" --password "$DOCKER_TOKEN"
-        - docker info
-    script:
-        - ./scripts/build
-        - ./scripts/publish
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  before_script:
+    - docker login --username "$DOCKER_USERNAME" --password "$DOCKER_TOKEN"
+    - docker info
+  script:
+    - ./scripts/build
+    - ./scripts/publish

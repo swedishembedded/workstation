@@ -1,0 +1,10 @@
+#!/bin/bash
+
+CURDIR="$(dirname $BASH_SOURCE)"
+ROOT="$(realpath $(dirname $BASH_SOURCE)/../..)"
+
+$CURDIR/docker
+$CURDIR/i3
+$CURDIR/nvim
+$CURDIR/tmux
+$CURDIR/sdk

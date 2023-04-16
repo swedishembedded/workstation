@@ -1,0 +1,11 @@
+#!/bin/bash
+
+ROOT="$(realpath $(dirname $BASH_SOURCE)/../..)"
+
+sudo apt-get update && sudo apt-get install -qy \
+	docker.io
+
+# Add current user to docker group
+if [[ ! -z "$USER" ]]; then
+	sudo usermod -aG docker $USER
+fi
