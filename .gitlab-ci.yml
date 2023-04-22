@@ -21,6 +21,15 @@ bootstrap docker:
   script:
     - ./scripts/bootstrap/docker
 
+bootstrap gdb:
+  image: ubuntu:22.04
+  stage: bootstrap
+  extends: .sudo
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - ./scripts/bootstrap/gdb
+
 bootstrap i3:
   image: ubuntu:22.04
   stage: bootstrap
