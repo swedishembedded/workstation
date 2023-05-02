@@ -1,3 +1,4 @@
+# This is Zephyr Base Image
 FROM ubuntu:20.04
 
 ARG CMAKE_VERSION=3.20.5

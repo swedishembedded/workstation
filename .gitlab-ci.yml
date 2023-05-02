@@ -1,6 +1,4 @@
 ---
-image: docker:20.10.16
-
 stages:
   - bootstrap
   - build
@@ -65,6 +63,22 @@ bootstrap sdk:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
     - ./scripts/bootstrap/sdk
+
+build doc:
+  image: swedishembedded/build:v0.24.6
+  stage: bootstrap
+  extends: .sudo
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - pip3 install sphinxcontrib-plantuml
+    - mkdir build-doc && cd build-doc && cmake ../doc
+    - make
+  artifacts:
+    paths:
+      - build-doc/_build/
+    expire_in: 2 weeks
+    when: always
 
 build:
   stage: build
