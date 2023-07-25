@@ -1,15 +1,16 @@
-ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-zephyrprojectrtos/ci-base:latest}
+# CI Image (ci)
 
-ARG ZSDK_VERSION=0.15.2
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE:-swedishembedded/base:latest}
+
+ARG ZSDK_VERSION=0.16.1
 ARG DOXYGEN_VERSION=1.9.4
-ARG CMAKE_VERSION=3.20.5
-ARG RENODE_VERSION=1.13.2
-ARG LLVM_VERSION=15
-ARG BSIM_VERSION=v1.0.3
+ARG RENODE_VERSION=1.13.3
+ARG LLVM_VERSION=16
+ARG BSIM_VERSION=v2.1
 ARG SPARSE_VERSION=9212270048c3bd23f56c20a83d4f89b870b2b26e
 ARG PROTOC_VERSION=21.7
-ARG WGET_ARGS="-q --show-progress --progress=bar:force:noscroll --no-check-certificate"
+ARG WGET_ARGS="-q --show-progress --progress=bar:force:noscroll"
 
 
 # Install Doxygen (x86 only)
@@ -26,32 +27,28 @@ RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
 # NOTE: Renode is currently only available for x86_64 host.
 RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
 	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF && \
-	echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" | tee /etc/apt/sources.list.d/mono-official-stable.list && \
+	echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | tee /etc/apt/sources.list.d/mono-official-stable.list && \
 	apt-get -y update && \
 	wget ${WGET_ARGS} https://github.com/renode/renode/releases/download/v${RENODE_VERSION}/renode_${RENODE_VERSION}_amd64.deb && \
 	apt-get install -y ./renode_${RENODE_VERSION}_amd64.deb && \
-	rm renode_${RENODE_VERSION}_amd64.deb \
+	rm renode_${RENODE_VERSION}_amd64.deb && \
+	pip3 install -r /opt/renode/tests/requirements.txt --no-cache-dir \
 	; fi
 
 # Install BSIM
-RUN mkdir -p /opt/bsim && \
-	cd /opt/bsim && \
-	rm -f repo && \
-	wget ${WGET_ARGS} https://storage.googleapis.com/git-repo-downloads/repo && \
-	chmod a+x ./repo && \
-	python3 ./repo init -u https://github.com/BabbleSim/manifest.git -m zephyr_docker.xml -b ${BSIM_VERSION} --depth 1 &&\
-	python3 ./repo sync && \
+# Note: west needs an extra folder level, so we create a link to the old location to be backwards compatible
+RUN mkdir -p /opt/bsim_west && \
+	cd /opt/ && \
+	west init -m https://github.com/zephyrproject-rtos/babblesim-manifest.git --mr ${BSIM_VERSION} bsim_west && \
+	cd bsim_west/bsim && \
+	west update && \
 	make everything -j 8 && \
 	echo ${BSIM_VERSION} > ./version && \
-	chmod ag+w . -R
+	chmod ag+w . -R && \
+	ln -s /opt/bsim_west/bsim /opt/bsim
 
 # Install uefi-run utility
-RUN wget ${WGET_ARGS} https://static.rust-lang.org/rustup/rustup-init.sh && \
-	chmod +x rustup-init.sh && \
-	./rustup-init.sh -y && \
-	. $HOME/.cargo/env && \
-	cargo install uefi-run --root /usr && \
-	rm -f ./rustup-init.sh
+RUN cargo install uefi-run --root /usr
 
 # Install LLVM and Clang
 RUN wget ${WGET_ARGS} https://apt.llvm.org/llvm.sh && \
@@ -80,10 +77,10 @@ RUN mkdir -p /opt/protoc && \
 # Install Zephyr SDK
 RUN mkdir -p /opt/toolchains && \
 	cd /opt/toolchains && \
-	wget ${WGET_ARGS} https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZSDK_VERSION}/zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.gz && \
-	tar xf zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.gz && \
+	wget ${WGET_ARGS} https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZSDK_VERSION}/zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.xz && \
+	tar xf zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.xz && \
 	zephyr-sdk-${ZSDK_VERSION}/setup.sh -t all -h -c && \
-	rm zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.gz
+	rm zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.xz
 
 # Clean up stale packages
 RUN apt-get clean -y && \

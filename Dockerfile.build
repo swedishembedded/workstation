@@ -1,6 +1,6 @@
 # This is our build image
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-zephyrprojectrtos/ci:latest}
+FROM ${BASE_IMAGE:-swedishembedded/ci:latest}
 
 ARG WGET_ARGS="-q --show-progress --progress=bar:force:noscroll --no-check-certificate"
 ARG LEDGER_VERSION=3.3.2
@@ -39,10 +39,11 @@ RUN apt-get update && \
 # Dependencies for asciidoc pdf generation
 RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
-	curl aspell aspell-en
+	curl aspell aspell-en pandoc
 
 RUN gem install \
 	asciidoctor-pdf \
+	asciidoctor-epub3 \
 	asciidoctor-html5s
 
 # Node JS
@@ -65,7 +66,9 @@ RUN gem install \
 # Dependencies for code checking
 RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
-	clang-format libclang-12-dev
+	clang-format \
+	libclang-12-dev \
+	libgtest-dev
 
 # Dependencies for ledger
 RUN apt-get update && \

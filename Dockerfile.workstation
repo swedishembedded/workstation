@@ -1,18 +1,12 @@
 # This is our develop image
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-swedishembedded/build:latest}
+FROM ${BASE_IMAGE:-swedishembedded/devel:latest}
 
 ARG EMACS_VERSION=28.1
 
+USER root
 RUN mkdir -p /build/platform && \
 	chown -R user:user /build
-
-USER user
-RUN cd /build/platform && \
-	git clone https://github.com/swedishembedded/sdk.git && \
-	cd sdk && \
-	./scripts/init
-USER root
 
 # Install emacs dependencies
 RUN apt-get update && \
@@ -25,7 +19,8 @@ RUN apt-get update && \
 	libjansson-dev \
 	gnutls-dev \
 	ripgrep \
-	wget
+	wget \
+	rubygems
 
 # Install tmux
 RUN apt-get update && \
@@ -59,10 +54,10 @@ RUN ~/.emacs.d/bin/doom env && \
 	~/.emacs.d/bin/doom upgrade
 USER root
 
-COPY --chown=user:user conf/tmux/tmux.conf /home/user/.tmux.conf
-COPY --chown=user:user conf/tmux/tmux.conf.local /home/user/.tmux.conf.local
+COPY --chown=user:user conf/.tmux.conf /home/user/.tmux.conf
+COPY --chown=user:user conf/.tmux.conf.local /home/user/.tmux.conf.local
 COPY --chown=user:user conf/tmuxinator /home/user/.config/tmuxinator
-COPY --chown=user:user conf/bashrc /home/user/.bashrc
+COPY --chown=user:user conf/.bashrc /home/user/.bashrc
 COPY --chown=user:user conf/pygdbinit /home/user/.pygdbinit
 
 # Install terminal utilities

@@ -1,20 +1,22 @@
 #!/bin/sh
 
-# abort on error (note that this is only a fallback. You should still check
-# return codes every single time!)
-set -e
+ROOT="$(readlink -f "$(dirname "$(readlink -f "$0")")/..")"
+IMAGES="$1"
 
-if [ "$(which git)" != "" ]; then
-	TAG=`git describe --tags --first-parent --abbrev=0`
-else
-	TAG="v0.24.6"
+. "${ROOT}/scripts/common.sh"
+
+set -x
+
+echo "Building images: $IMAGES for $TAG"
+
+if [ -z "$IMAGES" ]; then
+	IMAGES="base ci build devel workstateion"
 fi
 
-echo "Building image: $TAG"
-
 # Build the build image
-docker build \
-	-f Dockerfile.build \
-	--build-arg UID=$(id -u) \
-	--build-arg GID=$(id -g) \
-	-t swedishembedded/build:$TAG .
+for IMAGE in $IMAGES; do
+	docker build \
+		-f Dockerfile.${IMAGE} \
+		-t swedishembedded/${IMAGE}:latest \
+		-t swedishembedded/${IMAGE}:$TAG .
+done

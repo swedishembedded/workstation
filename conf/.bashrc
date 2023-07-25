@@ -21,8 +21,6 @@ alias pygdb="gdb-multiarch -x ~/.pygdbinit"
 
 PATH=$PATH:/opt/microchip/xc16/v1.36/bin:/opt/microchip/xc32/v2.15/bin/
 export PATH=~/.local/bin:"$PATH"
-export PATH=~/.local/bin:"$PATH"
-export PATH=~/.local/bin:"$PATH"
 
 function cl() {
     DIR="$*";

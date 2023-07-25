@@ -1,8 +1,6 @@
-# This is Zephyr Base Image
-FROM ubuntu:20.04
+# Base Image (base)
 
-ARG CMAKE_VERSION=3.20.5
-ARG WGET_ARGS="-q --show-progress --progress=bar:force:noscroll --no-check-certificate"
+FROM ubuntu:22.04
 
 ARG UID=1000
 ARG GID=1000
@@ -24,8 +22,10 @@ RUN apt-get -y update && \
 		bison \
 		build-essential \
 		ca-certificates \
+		cargo \
 		ccache \
 		chrpath \
+		cmake \
 		cpio \
 		device-tree-compiler \
 		dfu-util \
@@ -46,6 +46,7 @@ RUN apt-get -y update && \
 		help2man \
 		iproute2 \
 		lcov \
+		libcairo2-dev \
 		libglib2.0-dev \
 		libgtk2.0-0 \
 		liblocale-gettext-perl \
@@ -62,6 +63,7 @@ RUN apt-get -y update && \
 		net-tools \
 		ninja-build \
 		openssh-client \
+		parallel \
 		pkg-config \
 		python3-dev \
 		python3-pip \
@@ -78,7 +80,8 @@ RUN apt-get -y update && \
 		valgrind \
 		wget \
 		ovmf \
-		xz-utils
+		xz-utils \
+		thrift-compiler
 
 # Install multi-lib gcc (x86 only)
 RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
@@ -102,23 +105,16 @@ ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 
-# Install CMake
-RUN wget ${WGET_ARGS} https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-${HOSTTYPE}.sh && \
-	chmod +x cmake-${CMAKE_VERSION}-Linux-${HOSTTYPE}.sh && \
-	./cmake-${CMAKE_VERSION}-Linux-${HOSTTYPE}.sh --skip-license --prefix=/usr/local && \
-	rm -f ./cmake-${CMAKE_VERSION}-Linux-${HOSTTYPE}.sh
-
 # Install Python dependencies
-RUN pip3 install wheel pip -U &&\
-	pip3 install -r https://raw.githubusercontent.com/zephyrproject-rtos/zephyr/master/scripts/requirements.txt && \
-	pip3 install -r https://raw.githubusercontent.com/zephyrproject-rtos/mcuboot/master/scripts/requirements.txt && \
-	pip3 install west &&\
-	pip3 install sh &&\
-	pip3 install awscli PyGithub junitparser pylint \
-		     statistics numpy \
-		     imgtool \
-		     protobuf \
-		     GitPython
+RUN python3 -m pip install -U --no-cache-dir pip && \
+	pip3 install -U --no-cache-dir wheel setuptools && \
+	pip3 install --no-cache-dir pygobject && \
+	pip3 install --no-cache-dir \
+		-r https://raw.githubusercontent.com/zephyrproject-rtos/zephyr/main/scripts/requirements.txt \
+		-r https://raw.githubusercontent.com/zephyrproject-rtos/mcuboot/main/scripts/requirements.txt \
+		GitPython imgtool junitparser numpy protobuf PyGithub \
+		pylint sh statistics west && \
+	pip3 check
 
 # Clean up stale packages
 RUN apt-get clean -y && \

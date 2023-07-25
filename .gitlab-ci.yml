@@ -1,8 +1,11 @@
 ---
 stages:
-  - bootstrap
   - build
+  - bootstrap
   - publish
+
+default:
+  image: swedishembedded/build:latest
 
 .sudo:
   before_script:
@@ -10,89 +13,82 @@ stages:
     - echo 'debconf debconf/frontend select Noninteractive' | sudo
       debconf-set-selections
 
-bootstrap docker:
-  image: ubuntu:22.04
-  extends: .sudo
-  stage: bootstrap
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  script:
-    - ./scripts/bootstrap/docker
-
-bootstrap gdb:
-  image: ubuntu:22.04
-  stage: bootstrap
-  extends: .sudo
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  script:
-    - ./scripts/bootstrap/gdb
-
-bootstrap i3:
-  image: ubuntu:22.04
-  stage: bootstrap
-  extends: .sudo
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  script:
-    - ./scripts/bootstrap/i3
-
-bootstrap nvim:
-  image: ubuntu:22.04
-  stage: bootstrap
-  extends: .sudo
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  script:
-    - ./scripts/bootstrap/nvim
-
-bootstrap tmux:
-  image: ubuntu:22.04
-  stage: bootstrap
-  extends: .sudo
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  script:
-    - ./scripts/bootstrap/tmux
-
-bootstrap sdk:
-  image: ubuntu:22.04
-  stage: bootstrap
-  extends: .sudo
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  script:
-    - ./scripts/bootstrap/sdk
-
-build doc:
-  image: swedishembedded/build:v0.24.6
-  stage: bootstrap
-  extends: .sudo
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  script:
-    - pip3 install sphinxcontrib-plantuml
-    - mkdir build-doc && cd build-doc && cmake ../doc
-    - make
+documentation:
+  stage: build
   artifacts:
     paths:
       - build-doc/_build/
     expire_in: 2 weeks
     when: always
+  rules:
+    - if: $CI_PIPELINE_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - pip3 install -r requirements-doc.txt
+    - mkdir build-doc && cd build-doc && cmake ../doc
+    - make
 
-build:
+.build: &build
   stage: build
-  when: manual
+  tags:
+    - docker-dind
+  image: docker:latest
   artifacts:
     paths:
     expire_in: 2 weeks
     when: always
   rules:
+    - if: $CI_PIPELINE_BRANCH == "main"
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   before_script:
     - docker info
   script:
-    - ./scripts/build
+    - set -x
+    - ./scripts/build $IMAGE
+
+base:
+  <<: *build
+  variables:
+    IMAGE: base
+
+ci:
+  <<: *build
+  variables:
+    IMAGE: ci
+  needs: ["base"]
+
+build:
+  <<: *build
+  variables:
+    IMAGE: build
+  needs: ["ci"]
+
+devel:
+  <<: *build
+  variables:
+    IMAGE: devel
+  needs: ["build"]
+
+workstation:
+  <<: *build
+  variables:
+    IMAGE: workstation
+  needs: ["devel"]
+
+bootstrap:
+  image: ubuntu:22.04
+  stage: bootstrap
+  when: manual
+  rules:
+    - if: $CI_PIPELINE_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - ./scripts/bootstrap/docker
+    - ./scripts/bootstrap/gdb
+    - ./scripts/bootstrap/i3
+    - ./scripts/bootstrap/nvim
+    - ./scripts/bootstrap/tmux
+    - ./scripts/bootstrap/sdk
 
 publish:
   stage: publish
@@ -100,13 +96,15 @@ publish:
     paths:
     expire_in: 2 weeks
     when: always
-
   rules:
-    - if: $CI_PIPELINE_SOURCE == "web"
-    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
   before_script:
     - docker login --username "$DOCKER_USERNAME" --password "$DOCKER_TOKEN"
     - docker info
   script:
-    - ./scripts/build
     - ./scripts/publish
+  release:
+    name: v0.26.4-0
+    tag_name: v0.26.4-0
+    description: 'Official Image'
