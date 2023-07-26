@@ -2,6 +2,7 @@
 stages:
   - build
   - bootstrap
+  - release
   - publish
 
 default:
@@ -90,21 +91,46 @@ bootstrap:
     - ./scripts/bootstrap/tmux
     - ./scripts/bootstrap/sdk
 
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+  script:
+    - echo "Making a release"
+  release:
+    name: v0.26.4-0
+    tag_name: v0.26.4-0
+    description: 'Official Image'
+
 publish:
   stage: publish
+  image: docker:latest
+  tags:
+    - docker-dind
+  variables:
+    TAG: v0.26.4-0
+  parallel:
+    matrix:
+      - IMAGE: [base, ci, build, devel, workstation]
   artifacts:
     paths:
     expire_in: 2 weeks
     when: always
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: manual
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
   before_script:
-    - docker login --username "$DOCKER_USERNAME" --password "$DOCKER_TOKEN"
+    - echo "$DOCKER_TOKEN" | docker login --username "$DOCKER_USERNAME" --password-stdin
     - docker info
   script:
-    - ./scripts/publish
-  release:
-    name: v0.26.4-0
-    tag_name: v0.26.4-0
-    description: 'Official Image'
+    - docker push swedishembedded/$IMAGE:$TAG
+    - docker push swedishembedded/$IMAGE:latest
+  needs: [release]
+
