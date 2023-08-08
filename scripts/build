@@ -10,7 +10,7 @@ set -x
 echo "Building images: $IMAGES for $TAG"
 
 if [ -z "$IMAGES" ]; then
-	IMAGES="base ci build devel workstateion"
+	IMAGES="base ci build devel workstation"
 fi
 
 # Build the build image

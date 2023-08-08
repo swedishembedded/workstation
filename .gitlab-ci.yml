@@ -25,7 +25,7 @@ documentation:
     - if: $CI_PIPELINE_BRANCH == "main"
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
-    - pip3 install -r requirements-doc.txt
+    - pip3 install -r requirements.txt
     - mkdir build-doc && cd build-doc && cmake ../doc
     - make
 
@@ -104,8 +104,8 @@ release:
   script:
     - echo "Making a release"
   release:
-    name: v0.26.4-0
-    tag_name: v0.26.4-0
+    name: v0.26.4-1
+    tag_name: v0.26.4-1
     description: 'Official Image'
 
 publish:
@@ -114,7 +114,7 @@ publish:
   tags:
     - docker-dind
   variables:
-    TAG: v0.26.4-0
+    TAG: v0.26.4-1
   parallel:
     matrix:
       - IMAGE: [base, ci, build, devel, workstation]
