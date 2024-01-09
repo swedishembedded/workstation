@@ -1,25 +1,99 @@
-# This is our build image
+# CI Image (ci)
+
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-swedishembedded/ci:latest}
+FROM ${BASE_IMAGE:-swedishembedded/base:latest}
 
+ARG ZSDK_VERSION=0.16.3
+ARG DOXYGEN_VERSION=1.9.4
+ARG RENODE_VERSION=1.13.3
+ARG LLVM_VERSION=16
+ARG BSIM_VERSION=v2.1
+ARG SPARSE_VERSION=9212270048c3bd23f56c20a83d4f89b870b2b26e
+ARG PROTOC_VERSION=21.7
 ARG WGET_ARGS="-q --show-progress --progress=bar:force:noscroll --no-check-certificate"
+
+
+# Install Doxygen (x86 only)
+# NOTE: Pre-built Doxygen binaries are only available for x86_64 host.
+RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
+	wget ${WGET_ARGS} https://downloads.sourceforge.net/project/doxygen/rel-${DOXYGEN_VERSION}/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz && \
+	tar xf doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz -C /opt && \
+	ln -s /opt/doxygen-${DOXYGEN_VERSION}/bin/doxygen /usr/local/bin && \
+	rm doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz \
+	; fi
+
+
+# Install renode (x86 only)
+# NOTE: Renode is currently only available for x86_64 host.
+RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
+	echo "deb [trusted=yes] https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list && \
+	sudo apt-get update && \
+	wget ${WGET_ARGS} https://github.com/renode/renode/releases/download/v${RENODE_VERSION}/renode_${RENODE_VERSION}_amd64.deb && \
+	apt-get install -y ./renode_${RENODE_VERSION}_amd64.deb && \
+	rm renode_${RENODE_VERSION}_amd64.deb && \
+	pip3 install -r /opt/renode/tests/requirements.txt --no-cache-dir \
+	; fi
+
+# Install BSIM
+# Note: west needs an extra folder level, so we create a link to the old location to be backwards compatible
+RUN mkdir -p /opt/bsim_west && \
+	cd /opt/ && \
+	west init -m https://github.com/zephyrproject-rtos/babblesim-manifest.git --mr ${BSIM_VERSION} bsim_west && \
+	cd bsim_west/bsim && \
+	west update && \
+	make everything -j 8 && \
+	echo ${BSIM_VERSION} > ./version && \
+	chmod ag+w . -R && \
+	ln -s /opt/bsim_west/bsim /opt/bsim
+
+RUN apt-get update && \
+	apt-get install -qy curl
+
+# Install rustup
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install uefi-run utility
+RUN cargo install uefi-run --root /usr
+
+# Install LLVM and Clang
+RUN wget ${WGET_ARGS} https://apt.llvm.org/llvm.sh && \
+	chmod +x llvm.sh && \
+	./llvm.sh ${LLVM_VERSION} all && \
+	rm -f llvm.sh
+
+# Install sparse package for static analysis
+RUN mkdir -p /opt/sparse && \
+	cd /opt/sparse && \
+	git clone https://git.kernel.org/pub/scm/devel/sparse/sparse.git && \
+	cd sparse && git checkout ${SPARSE_VERSION} && \
+	make -j8 && \
+	PREFIX=/opt/sparse make install && \
+	rm -rf /opt/sparse/sparse
+
+# Install protobuf-compiler
+RUN mkdir -p /opt/protoc && \
+	cd /opt/protoc && \
+	PROTOC_HOSTTYPE=$(case $HOSTTYPE in x86_64) echo "x86_64";; aarch64) echo "aarch_64";; esac) && \
+	wget ${WGET_ARGS} https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-${PROTOC_HOSTTYPE}.zip && \
+	unzip protoc-${PROTOC_VERSION}-linux-${PROTOC_HOSTTYPE}.zip && \
+	ln -s /opt/protoc/bin/protoc /usr/local/bin && \
+	rm -f protoc-${PROTOC_VERSION}-linux-${PROTOC_HOSTTYPE}.zip
+
+# Install Zephyr SDK
+RUN mkdir -p /opt/toolchains && \
+	cd /opt/toolchains && \
+	wget ${WGET_ARGS} https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZSDK_VERSION}/zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.xz && \
+	tar xf zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.xz && \
+	zephyr-sdk-${ZSDK_VERSION}/setup.sh -t all -h -c && \
+	rm zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.xz
+
 ARG LEDGER_VERSION=3.3.2
-
-# Set default shell during Docker image build to bash
-SHELL ["/bin/bash", "-c"]
-
-# Set non-interactive frontend for apt-get to skip any user confirmations
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install base packages
-RUN apt-get -y update && \
-	apt-get -y upgrade && \
-	apt-get install --no-install-recommends -y \
-	bc
 
 # install additional requirements
 COPY requirements*.txt /tmp/
-RUN pip3 install -r /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt && \
+	rm /tmp/requirements.txt
 
 # Extra dependencies for documentation generation
 RUN apt-get update && \
@@ -42,14 +116,6 @@ RUN gem install \
 	asciidoctor-epub3 \
 	asciidoctor-html5s
 
-# Node JS
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-
-# This will install nodejs and npm after installer finished
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	nodejs
-
 # Ruby dependencies for CMock
 RUN gem install \
 	bundler \
@@ -64,7 +130,8 @@ RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
 	clang-format \
 	libclang-12-dev \
-	libgtest-dev
+	libgtest-dev \
+	cscope
 
 # Dependencies for ledger
 RUN apt-get update && \
@@ -88,15 +155,9 @@ RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
 	imagemagick
 
-# Dependencies for tags generation on ci
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	cscope
-
 # Other dependencies
 RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
-	git-lfs \
 	octave
 
 # Kicad for building PCBs on CI
@@ -105,15 +166,24 @@ RUN add-apt-repository --yes ppa:kicad/kicad-6.0-releases && \
 	apt-get -qy install --install-recommends kicad && \
 	pip3 install --no-compile kibot
 
-# OSS CAD Suite (full suite for building verilog stuff)
-RUN wget ${WGET_ARGS} https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2022-11-05/oss-cad-suite-linux-x64-20221105.tgz && \
-	tar xf oss-cad-suite-linux-x64-20221105.tgz -C /opt
-
 # Clean up stale packages
 RUN apt-get clean -y && \
 	apt-get autoremove --purge -y && \
 	rm -rf /var/lib/apt/lists/*
 
-# Set working directory
-WORKDIR /builds
-VOLUME ["/builds"]
+# Run the Zephyr SDK setup script as 'user' in order to ensure that the
+# `Zephyr-sdk` CMake package is located in the package registry under the
+# user's home directory.
+USER user
+
+RUN sudo -E -- bash -c ' \
+	/opt/toolchains/zephyr-sdk-${ZSDK_VERSION}/setup.sh -c && \
+	chown -R user:user /home/user/.cmake \
+	'
+
+USER root
+
+# Set the locale
+ENV ZEPHYR_TOOLCHAIN_VARIANT=zephyr
+ENV PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig
+ENV OVMF_FD_PATH=/usr/share/ovmf/OVMF.fd

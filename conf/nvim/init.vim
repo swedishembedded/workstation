@@ -146,9 +146,11 @@ let c_space_errors = 1
 " }}}
 
 " Load vim-plug {{{
-if empty(glob('~/.local/share/nvim/site/autoload/plug.vim'))
-	silent !curl -fLo ~/.config/nvim/autoload/plug.vim --create-dirs
-		\ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+" Install vim plug if not installed
+let data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
+if empty(glob(data_dir . '/autoload/plug.vim'))
+  silent execute '!curl -fLo '.data_dir.'/autoload/plug.vim --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
 endif
 " }}}
 
@@ -157,6 +159,7 @@ call plug#begin()
 	" Plug 'airblade/vim-gitgutter'
 	" Plug 'elpiloto/significant.nvim'
 	" Plug '~/.config/nvim/mrtee'
+	Plug 'catppuccin/nvim', { 'as': 'catppuccin' }
 	Plug 'akinsho/bufferline.nvim', { 'tag': 'v3.7.0' } " plugin for tab line at the top
 	Plug 'catppuccin/nvim', { 'as': 'catppuccin' } " a beautiful color scheme
 	Plug 'dense-analysis/ale' " linting and fixing code.

@@ -52,29 +52,17 @@ base:
   variables:
     IMAGE: base
 
-ci:
-  <<: *build
-  variables:
-    IMAGE: ci
-  needs: ["base"]
-
 build:
   <<: *build
   variables:
     IMAGE: build
-  needs: ["ci"]
-
-devel:
-  <<: *build
-  variables:
-    IMAGE: devel
-  needs: ["build"]
+  needs: ["base"]
 
 workstation:
   <<: *build
   variables:
     IMAGE: workstation
-  needs: ["devel"]
+  needs: ["build"]
 
 bootstrap:
   image: ubuntu:22.04

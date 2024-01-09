@@ -16,13 +16,13 @@ RUN apt-get -y update && \
 	apt-get -y upgrade && \
 	apt-get install --no-install-recommends -y \
 		software-properties-common \
+		curl \
 		lsb-release \
 		autoconf \
 		automake \
 		bison \
 		build-essential \
 		ca-certificates \
-		cargo \
 		ccache \
 		chrpath \
 		cmake \
@@ -81,6 +81,7 @@ RUN apt-get -y update && \
 		wget \
 		ovmf \
 		xz-utils \
+		apt-utils \
 		thrift-compiler
 
 # Install multi-lib gcc (x86 only)

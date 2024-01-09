@@ -14,7 +14,6 @@ sudo apt-get update && sudo apt install -qy \
 	exuberant-ctags \
 	gettext \
 	flake8 \
-	eslint \
 	mypy \
 	python3-pip \
 	clangd \
@@ -33,15 +32,15 @@ NVIM_INSTALLED_VERSION=""
 which nvim && {
 	NVIM_INSTALLED_VERSION="v$(nvim --version | head -1 | egrep -o '[0-9]+\.[0-9]+.[0-9]+')"
 }
-if [[ "$NVIM_VERSION" != "$NVIM_INSTALLED_VERSION" ]]; then
+#if [[ "$NVIM_VERSION" != "$NVIM_INSTALLED_VERSION" ]]; then
 	echo "Installing nvim version $NVIM_VERSION"
 	(cd $BUILD_DIR && git clone https://github.com/neovim/neovim.git)
 	(cd $BUILD_DIR/neovim && git checkout $NVIM_VERSION)
 	make -j $(nproc) -C $BUILD_DIR/neovim
 	sudo make -C $BUILD_DIR/neovim install
-else
-	echo "Found NVIM version $NVIM_INSTALLED_VERSION. Not compiling."
-fi
+#else
+#	echo "Found NVIM version $NVIM_INSTALLED_VERSION. Not compiling."
+#fi
 
 # Vim configuration
 curl -fLo ~/.config/nvim/autoload/plug.vim --create-dirs \

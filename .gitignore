@@ -1,3 +1,5 @@
 /*.html
 /build-doc
 /output.xml
+/node_modules
+/.vscode

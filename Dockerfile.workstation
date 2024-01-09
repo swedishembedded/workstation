@@ -1,9 +1,12 @@
 # This is our develop image
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-swedishembedded/devel:latest}
+FROM ${BASE_IMAGE:-swedishembedded/build:latest}
 
 ARG EMACS_VERSION=28.1
+ARG NEOVIM_VERSION=v0.9.5
+ARG NODE_VERSION v21.5.0
 
+SHELL ["bash", "-c"]
 USER root
 RUN mkdir -p /build/platform && \
 	chown -R user:user /build
@@ -13,6 +16,7 @@ RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
 	cmake \
 	ncurses-dev \
+	libacl1-dev \
 	libgccjit0 \
 	libgccjit-10-dev \
 	libjansson4 \
@@ -60,15 +64,74 @@ COPY --chown=user:user conf/tmuxinator /home/user/.config/tmuxinator
 COPY --chown=user:user conf/.bashrc /home/user/.bashrc
 COPY --chown=user:user conf/pygdbinit /home/user/.pygdbinit
 
+# Install neovim dependencies
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	gettext
+
+# Install neovim
+RUN git clone https://github.com/neovim/neovim.git && \
+	cd neovim && \
+	git checkout $NEOVIM_VERSION && \
+	make CMAKE_BUILD_TYPE=RelWithDebInfo && \
+	make install && \
+	cd .. && \
+	rm -rf neovim
+RUN pip3 install pynvim
+
+# Install nvim plugin manager
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	curl
+RUN curl -fLo ~/.local/share/nvim/site/autoload/plug.vim \
+	--create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+
+COPY --chown=user:user conf/nvim /home/user/.config/nvim/
+
 # Install terminal utilities
 RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
 	tree \
+	tig \
+	gitk \
 	picocom
+
+RUN pip3 install pre-commit
+
+# Install latest nodejs packages
+RUN curl -sL https://deb.nodesource.com/setup_21.x  | bash - && \
+	apt-get -qy install nodejs
+
+RUN npm install -g \
+	npm \
+	vim-language-server
+
+# Install cypress dependencies
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+		libgtk2.0-0 \
+		libgtk-3-0 \
+		libgbm-dev \
+		libnotify-dev \
+		libnss3 \
+		libxss1 \
+		libasound2 \
+		libxtst6 \
+		xauth \
+		xvfb
+
+# Install language servers and support tools
+RUN apt-get update && \
+	apt-get -qy install --no-install-recommends \
+	clangd \
+	bash-completion \
+	yamllint
 
 # Install debugging tools
 RUN apt-get update && \
 	apt-get -qy install --no-install-recommends \
+	btop \
+	bc \
 	gdb-multiarch
 
 # Install tmuxinator
@@ -81,10 +144,24 @@ RUN apt-get update && \
 # install renode-run
 RUN pip3 install --upgrade git+https://github.com/antmicro/renode-run.git
 
-# Clean up stale packages
+# Install packages
+RUN apt-get -y update && \
+	apt-get -y upgrade && \
+	apt-get install --no-install-recommends -y \
+	openbox \
+	python3-xdg \
+	libpython3-dev \
+	xvfb \
+	xterm \
+	iputils-ping \
+	xz-utils
+
+# Clean up cached data
 RUN apt-get clean -y && \
 	apt-get autoremove --purge -y && \
-	rm -rf /var/lib/apt/lists/*
+	rm -rf /var/lib/apt/lists/* && \
+	npm cache clean --force && \
+	pip cache purge
 
 # Add entrypoint script
 ADD entrypoint.sh /home/user/init
@@ -96,17 +173,22 @@ USER user
 
 # Configure environment variables
 ENV DISPLAY=:0
-ENV ZEPHYR_BASE=/build/platform/zephyr
 ENV CMAKE_PREFIX_PATH=/opt/toolchains
 
 # Set working directory
-WORKDIR /build/
+WORKDIR /workspaces/
+
 #VOLUME ["/build/"]
 
-# Adjust 'user' home directory permissions
+# Adjust directory permissions
 USER root
+RUN chown user:user /workspaces/
 RUN chown user:user /home/user/.config
 USER user
+
+# Configure default shell and editor
+ENV SHELL=/bin/bash
+ENV EDITOR=nvim
 
 # Launch bash shell by default
 CMD ["/bin/bash"]

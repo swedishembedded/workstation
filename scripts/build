@@ -1,22 +1,25 @@
 #!/bin/sh
 
 ROOT="$(readlink -f "$(dirname "$(readlink -f "$0")")/..")"
-IMAGES="$1"
+IMAGES=$@
 
 . "${ROOT}/scripts/common.sh"
 
+set -e
 set -x
 
-echo "Building images: $IMAGES for $TAG"
+echo "Building image(s): $IMAGES for $TAG"
 
 if [ -z "$IMAGES" ]; then
-	IMAGES="base ci build devel workstation"
+	IMAGES="base build workstation"
 fi
 
 # Build the build image
 for IMAGE in $IMAGES; do
 	docker build \
-		-f Dockerfile.${IMAGE} \
-		-t swedishembedded/${IMAGE}:latest \
-		-t swedishembedded/${IMAGE}:$TAG .
+		-f Dockerfile."${IMAGE}" \
+		-t swedishembedded/"${IMAGE}":latest \
+		-t swedishembedded/"${IMAGE}":"$TAG" . || {
+		echo "BUILD FAILED!!!"
+	}
 done

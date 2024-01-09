@@ -1,7 +1,7 @@
 export LD_LIBRARY_PATH=/usr/local/lib
 export EDITOR=nvim
-export PS1="\u \w > "
-. /etc/bash_completion
+
+[ -f /etc/bash_completion ] && . /etc/bash_completion
 
 # added by travis gem
 [ -f /home/martin/.travis/travis.sh ] && source /home/martin/.travis/travis.sh
@@ -48,6 +48,11 @@ export PATH=~/.local/bin:"$PATH"
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+parse_git_branch() {
+     git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+}
+export PS1="\[\033[32m\]dev\[\033[00m\]:\[\033[34m\]\w\[\033[31m\]\$(parse_git_branch)\[\033[00m\] $ "
 
 export WASMTIME_HOME="$HOME/.wasmtime"
 export PATH="$WASMTIME_HOME/bin:$PATH"
