@@ -8,6 +8,11 @@ stages:
 default:
   image: swedishembedded/build:latest
 
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
 .sudo:
   before_script:
     - apt-get update && apt-get install -qy sudo
@@ -38,9 +43,6 @@ documentation:
     paths:
     expire_in: 2 weeks
     when: always
-  rules:
-    - if: $CI_PIPELINE_BRANCH == "main"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   before_script:
     - docker info
   script:
@@ -68,9 +70,6 @@ bootstrap:
   image: ubuntu:22.04
   stage: bootstrap
   when: manual
-  rules:
-    - if: $CI_PIPELINE_BRANCH == "main"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
     - ./scripts/bootstrap/docker
     - ./scripts/bootstrap/gdb
@@ -88,12 +87,12 @@ release:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       when: manual
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: never
+      when: manual
   script:
     - echo "Making a release"
   release:
-    name: v0.26.4-1
-    tag_name: v0.26.4-1
+    name: v0.26.4-2
+    tag_name: v0.26.4-2
     description: 'Official Image'
 
 publish:
@@ -102,10 +101,10 @@ publish:
   tags:
     - docker-dind
   variables:
-    TAG: v0.26.4-1
+    TAG: v0.26.4-2
   parallel:
     matrix:
-      - IMAGE: [base, ci, build, devel, workstation]
+      - IMAGE: [base, build, workstation]
   artifacts:
     paths:
     expire_in: 2 weeks
@@ -113,7 +112,7 @@ publish:
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: never
+      when: manual
   before_script:
     - echo "$DOCKER_TOKEN" | docker login --username "$DOCKER_USERNAME" --password-stdin
     - docker info
