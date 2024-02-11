@@ -44,10 +44,18 @@ documentation:
     expire_in: 2 weeks
     when: always
   before_script:
+    - echo "$DOCKER_TOKEN" | docker login --username "$DOCKER_USERNAME" --password-stdin
     - docker info
   script:
-    - set -x
-    - ./scripts/build $IMAGE
+    - docker build
+      -f Dockerfile."${IMAGE}"
+      -t swedishembedded/"${IMAGE}":${CI_COMMIT_SHORT_SHA} .
+    # TODO: test the image
+    - docker tag
+      swedishembedded/$IMAGE:${CI_COMMIT_SHORT_SHA}
+      swedishembedded/$IMAGE:latest
+    - docker rmi swedishembedded/$IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push swedishembedded/$IMAGE:latest
 
 base:
   <<: *build
@@ -91,9 +99,10 @@ release:
   script:
     - echo "Making a release"
   release:
-    name: v0.26.4-2
-    tag_name: v0.26.4-2
+    name: v0.26.5-0
+    tag_name: v0.26.5-0
     description: 'Official Image'
+  needs: []
 
 publish:
   stage: publish
@@ -101,7 +110,7 @@ publish:
   tags:
     - docker-dind
   variables:
-    TAG: v0.26.4-2
+    TAG: v0.26.5-0
   parallel:
     matrix:
       - IMAGE: [base, build, workstation]
@@ -117,7 +126,9 @@ publish:
     - echo "$DOCKER_TOKEN" | docker login --username "$DOCKER_USERNAME" --password-stdin
     - docker info
   script:
+    # Take the latest image and push it into the tag
+    - docker pull swedishembedded/$IMAGE:latest
+    - docker tag swedishembedded/$IMAGE:latest swedishembedded/$IMAGE:$TAG
     - docker push swedishembedded/$IMAGE:$TAG
-    - docker push swedishembedded/$IMAGE:latest
   needs: [release]
 

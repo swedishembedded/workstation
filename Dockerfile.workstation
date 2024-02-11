@@ -11,25 +11,95 @@ USER root
 RUN mkdir -p /build/platform && \
 	chown -R user:user /build
 
-# Install emacs dependencies
 RUN apt-get update && \
+	echo "Installing latest nodejs packages" && \
+	curl -sL https://deb.nodesource.com/setup_21.x  | bash - && \
+	apt-get -qy install nodejs && \
+	echo "Installing emacs dependencies" && \
 	apt-get -qy install --no-install-recommends \
-	cmake \
-	ncurses-dev \
-	libacl1-dev \
-	libgccjit0 \
-	libgccjit-10-dev \
-	libjansson4 \
-	libjansson-dev \
-	gnutls-dev \
-	ripgrep \
-	wget \
-	rubygems
+		cmake \
+		ncurses-dev \
+		libacl1-dev \
+		libgccjit0 \
+		libgccjit-10-dev \
+		libjansson4 \
+		libjansson-dev \
+		gnutls-dev \
+		ripgrep \
+		wget && \
+	echo "Installing neovim dependencies" && \
+	apt-get -qy install --no-install-recommends \
+		luarocks \
+		xclip \
+		biber \
+		gettext && \
+	echo "Installing terminal utilities" && \
+	apt-get -qy install --no-install-recommends \
+		tree \
+		tig \
+		gitk \
+		picocom \
+		tmux && \
+	echo "Installing cypress dependencies" && \
+	apt-get -qy install --no-install-recommends \
+		libgtk2.0-0 \
+		libgtk-3-0 \
+		libgbm-dev \
+		libnotify-dev \
+		libnss3 \
+		libxss1 \
+		libasound2 \
+		libxtst6 \
+		xauth \
+		xvfb && \
+	echo "Installing language servers and support tools" && \
+	apt-get -qy install --no-install-recommends \
+		clangd \
+		bash-completion \
+		yamllint && \
+	echo "Installing debugging tools" && \
+	apt-get -qy install --no-install-recommends \
+		btop \
+		bc \
+		gdb-multiarch && \
+	echo "Installing additional tools" && \
+	apt-get install --no-install-recommends -y \
+		openbox \
+		python3-xdg \
+		libpython3-dev \
+		xvfb \
+		xterm \
+		iputils-ping \
+		xz-utils && \
+	echo "Cleaning up cache.." && \
+	apt-get clean -y && \
+	apt-get autoremove --purge -y && \
+	rm -rf /var/lib/apt/lists/*
 
-# Install tmux
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	tmux
+# Install ruby packages
+RUN gem install \
+	tmuxinator \
+	neovim
+
+# Install additional npm packages
+RUN npm install -g \
+	npm \
+	tree-sitter \
+	neovim \
+	pyright \
+	bash-language-server \
+	yaml-language-server \
+	vim-language-server && \
+	npm cache clean --force
+
+# Install additional python packages
+RUN pip3 install \
+	pre-commit \
+	mypy \
+	pynvim && \
+	echo "Installing renode-run" && \
+	pip3 install --upgrade git+https://github.com/antmicro/renode-run.git && \
+	pip3 cache purge
 
 # Build emacs
 RUN wget -q https://ftpmirror.gnu.org/emacs/emacs-${EMACS_VERSION}.tar.gz https://ftpmirror.gnu.org/emacs/emacs-${EMACS_VERSION}.tar.gz.sig && \
@@ -64,11 +134,6 @@ COPY --chown=user:user conf/tmuxinator /home/user/.config/tmuxinator
 COPY --chown=user:user conf/.bashrc /home/user/.bashrc
 COPY --chown=user:user conf/pygdbinit /home/user/.pygdbinit
 
-# Install neovim dependencies
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	gettext
-
 # Install neovim
 RUN git clone https://github.com/neovim/neovim.git && \
 	cd neovim && \
@@ -77,114 +142,44 @@ RUN git clone https://github.com/neovim/neovim.git && \
 	make install && \
 	cd .. && \
 	rm -rf neovim
-RUN pip3 install pynvim
 
-# Install nvim plugin manager
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	curl
-RUN curl -fLo ~/.local/share/nvim/site/autoload/plug.vim \
-	--create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
 COPY --chown=user:user conf/nvim /home/user/.config/nvim/
-
-# Install terminal utilities
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	tree \
-	tig \
-	gitk \
-	picocom
-
-RUN pip3 install pre-commit
-
-# Install latest nodejs packages
-RUN curl -sL https://deb.nodesource.com/setup_21.x  | bash - && \
-	apt-get -qy install nodejs
-
-RUN npm install -g \
-	npm \
-	vim-language-server
-
-# Install cypress dependencies
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-		libgtk2.0-0 \
-		libgtk-3-0 \
-		libgbm-dev \
-		libnotify-dev \
-		libnss3 \
-		libxss1 \
-		libasound2 \
-		libxtst6 \
-		xauth \
-		xvfb
-
-# Install language servers and support tools
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	clangd \
-	bash-completion \
-	yamllint
-
-# Install debugging tools
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	btop \
-	bc \
-	gdb-multiarch
-
-# Install tmuxinator
-RUN gem install tmuxinator
-
-# Install vim and nano
-RUN apt-get update && \
-	apt-get install -y vim nano
-
-# install renode-run
-RUN pip3 install --upgrade git+https://github.com/antmicro/renode-run.git
-
-# Install packages
-RUN apt-get -y update && \
-	apt-get -y upgrade && \
-	apt-get install --no-install-recommends -y \
-	openbox \
-	python3-xdg \
-	libpython3-dev \
-	xvfb \
-	xterm \
-	iputils-ping \
-	xz-utils
-
-# Clean up cached data
-RUN apt-get clean -y && \
-	apt-get autoremove --purge -y && \
-	rm -rf /var/lib/apt/lists/* && \
-	npm cache clean --force && \
-	pip cache purge
 
 # Add entrypoint script
 ADD entrypoint.sh /home/user/init
 RUN dos2unix /home/user/init
 ENTRYPOINT ["/home/user/init"]
 
+# Adjust directory permissions
+RUN mkdir /workspaces/
+RUN chown user:user /workspaces/
+RUN chown user:user /home/user/.config
+
 # Switch to 'user' context
 USER user
+
+# Install nvim plugin manager and vim plugins
+# NOTE: current vim config fails plug install the first time but it does succeed
+# the second time so that's why we need to run it twice and ignore the first
+# failure.
+RUN curl -fLo ~/.local/share/nvim/site/autoload/plug.vim \
+	--create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim && \
+	nvim -es -u ~/.config/nvim/init.vim '+PlugInstall --sync' +qa || true && \
+	nvim -es -u ~/.config/nvim/init.vim '+PlugInstall --sync' +qa && \
+	nvim -es -u ~/.config/nvim/init.vim '+TSUpdate lua' '+TSUpdate vimdoc' +qa
 
 # Configure environment variables
 ENV DISPLAY=:0
 ENV CMAKE_PREFIX_PATH=/opt/toolchains
 
+# Configure rust path
+ENV RUSTUP_HOME=/opt/rust
+ENV CARGO_HOME=/opt/rust
+ENV PATH=$PATH:/opt/rust/bin/
+
 # Set working directory
 WORKDIR /workspaces/
-
-#VOLUME ["/build/"]
-
-# Adjust directory permissions
-USER root
-RUN chown user:user /workspaces/
-RUN chown user:user /home/user/.config
-USER user
 
 # Configure default shell and editor
 ENV SHELL=/bin/bash

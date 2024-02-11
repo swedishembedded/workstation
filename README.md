@@ -28,6 +28,32 @@ It includes:
 docker pull swedishembedded/build:latest
 ```
 
+## Docker Compose 
+
+
+```
+---
+version: '3'
+services:
+  sts:
+    image: swedishembedded/workstation:latest
+    container_name: sts
+    stdin_open: true
+    environment:
+      - TERM
+      - DISPLAY
+    network_mode: host
+    volumes:
+      - ~/.ssh/:/home/user/.ssh
+```
+
+To start a shell in the newly created environment run:
+
+```
+docker-compose up -d
+docker exec -ti sts bash
+```
+
 ## Contact
 
 - Community: https://swedishembedded.com/community

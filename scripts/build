@@ -21,5 +21,6 @@ for IMAGE in $IMAGES; do
 		-t swedishembedded/"${IMAGE}":latest \
 		-t swedishembedded/"${IMAGE}":"$TAG" . || {
 		echo "BUILD FAILED!!!"
+		exit 1
 	}
 done

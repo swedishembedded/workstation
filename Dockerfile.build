@@ -26,12 +26,13 @@ RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
 # Install renode (x86 only)
 # NOTE: Renode is currently only available for x86_64 host.
 RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
-	echo "deb [trusted=yes] https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list && \
-	sudo apt-get update && \
-	wget ${WGET_ARGS} https://github.com/renode/renode/releases/download/v${RENODE_VERSION}/renode_${RENODE_VERSION}_amd64.deb && \
-	apt-get install -y ./renode_${RENODE_VERSION}_amd64.deb && \
-	rm renode_${RENODE_VERSION}_amd64.deb && \
-	pip3 install -r /opt/renode/tests/requirements.txt --no-cache-dir \
+		echo "deb [trusted=yes] https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list && \
+		sudo apt-get update && \
+		wget ${WGET_ARGS} https://github.com/renode/renode/releases/download/v${RENODE_VERSION}/renode_${RENODE_VERSION}_amd64.deb && \
+		apt-get install -y ./renode_${RENODE_VERSION}_amd64.deb && \
+		rm renode_${RENODE_VERSION}_amd64.deb && \
+		pip3 install -r /opt/renode/tests/requirements.txt --no-cache-dir && \
+		pip3 cache purge \
 	; fi
 
 # Install BSIM
@@ -47,11 +48,54 @@ RUN mkdir -p /opt/bsim_west && \
 	ln -s /opt/bsim_west/bsim /opt/bsim
 
 RUN apt-get update && \
-	apt-get install -qy curl
+	apt-get install -qy curl && \
+	echo "Installing extra dependencies for documentation generation" && \
+	apt-get -qy install --no-install-recommends \
+	doxygen-latex dot2tex  \
+	librsvg2-bin \
+	texlive-latex-base \
+	texlive-latex-extra \
+	latexmk \
+	texlive-fonts-recommended \
+	ruby \
+	rubygems \
+	ruby-dev \
+	bundler && \
+	echo "Installing dependencies for asciidoc pdf generation" && \
+	apt-get -qy install --no-install-recommends \
+	curl aspell aspell-en pandoc && \
+	echo "Installing dependencies for code checking" && \
+	apt-get -qy install --no-install-recommends \
+	clang-format \
+	libclang-12-dev \
+	libgtest-dev \
+	cscope && \
+	echo "Installing C++ libraries" && \
+	apt-get -qy install --no-install-recommends \
+	build-essential cmake doxygen \
+	libboost-system-dev libboost-dev python3-dev gettext git \
+	libboost-date-time-dev libboost-filesystem-dev \
+	libboost-iostreams-dev libboost-python-dev libboost-regex-dev \
+	libboost-test-dev libedit-dev libgmp3-dev libmpfr-dev texinfo tzdata && \
+	echo "Installing kicad toolbox" && \
+	apt-get -qy install --no-install-recommends \
+		kicad && \
+	pip3 install --no-compile kibot && \
+	pip3 cache purge && \
+	echo "Installing other dependencies" && \
+	apt-get -qy install --no-install-recommends \
+	octave \
+	imagemagick && \
+	echo "Cleaning up.." && \
+	apt-get clean -y && \
+	apt-get autoremove --purge -y && \
+	rm -rf /var/lib/apt/lists/*
 
 # Install rustup
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
+ENV RUSTUP_HOME=/opt/rust
+ENV CARGO_HOME=/opt/rust
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path
+ENV PATH=$PATH:/opt/rust/bin
 
 # Install uefi-run utility
 RUN cargo install uefi-run --root /usr
@@ -91,25 +135,12 @@ RUN mkdir -p /opt/toolchains && \
 ARG LEDGER_VERSION=3.3.2
 
 # install additional requirements
-COPY requirements*.txt /tmp/
+COPY requirements.txt /tmp/
+COPY requirements-doc.txt /tmp/
+COPY requirements-ci.txt /tmp/
 RUN pip3 install -r /tmp/requirements.txt && \
-	rm /tmp/requirements.txt
-
-# Extra dependencies for documentation generation
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	doxygen-latex dot2tex  \
-	librsvg2-bin \
-	texlive-latex-base \
-	texlive-latex-extra \
-	latexmk \
-	texlive-fonts-recommended \
-	ruby bundler
-
-# Dependencies for asciidoc pdf generation
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	curl aspell aspell-en pandoc
+	rm /tmp/requirements*.txt && \
+	pip3 cache purge
 
 RUN gem install \
 	asciidoctor-pdf \
@@ -125,51 +156,15 @@ RUN gem install \
 	constructor \
 	diy
 
-# Dependencies for code checking
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	clang-format \
-	libclang-12-dev \
-	libgtest-dev \
-	cscope
-
-# Dependencies for ledger
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	build-essential cmake doxygen \
-	libboost-system-dev libboost-dev python3-dev gettext git \
-	libboost-date-time-dev libboost-filesystem-dev \
-	libboost-iostreams-dev libboost-python-dev libboost-regex-dev \
-	libboost-test-dev libedit-dev libgmp3-dev libmpfr-dev texinfo tzdata
-
 # Ledger
 RUN wget https://github.com/ledger/ledger/archive/refs/tags/v${LEDGER_VERSION}.tar.gz && \
 	tar -xzf v${LEDGER_VERSION}.tar.gz && \
 	pushd ledger-${LEDGER_VERSION} && \
 	mkdir build && (cd build; cmake ..) && \
 	make -C build && \
-	sudo make -C build install
-
-# Dependencies for image tests
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	imagemagick
-
-# Other dependencies
-RUN apt-get update && \
-	apt-get -qy install --no-install-recommends \
-	octave
-
-# Kicad for building PCBs on CI
-RUN add-apt-repository --yes ppa:kicad/kicad-6.0-releases && \
-	apt-get update && \
-	apt-get -qy install --install-recommends kicad && \
-	pip3 install --no-compile kibot
-
-# Clean up stale packages
-RUN apt-get clean -y && \
-	apt-get autoremove --purge -y && \
-	rm -rf /var/lib/apt/lists/*
+	sudo make -C build install && \
+	popd && \
+	rm -rf ledger-*
 
 # Run the Zephyr SDK setup script as 'user' in order to ensure that the
 # `Zephyr-sdk` CMake package is located in the package registry under the

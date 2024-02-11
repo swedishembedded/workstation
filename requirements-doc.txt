@@ -1,6 +1,6 @@
-breathe>=4.30,<4.33 # 4.33: disabled due to #803 and #805 issues
-sphinx~=4.0
-sphinx_rtd_theme~=1.0
+breathe>=4.34
+sphinx~=6.2
+sphinx_rtd_theme~=1.2
 sphinx-tabs
 sphinx-togglebutton
 sphinx_markdown_tables
@@ -17,5 +17,5 @@ recommonmark==0.6.0
 CommonMark>=0.9.1
 m2r2>=0.3.2
 pygit2<=1.10
-pyyaml
+pyyaml>=5.1
 myst-parser

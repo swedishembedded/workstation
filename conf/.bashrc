@@ -4,7 +4,7 @@ export EDITOR=nvim
 [ -f /etc/bash_completion ] && . /etc/bash_completion
 
 # added by travis gem
-[ -f /home/martin/.travis/travis.sh ] && source /home/martin/.travis/travis.sh
+[ -f ~/.travis/travis.sh ] && source ~/.travis/travis.sh
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
@@ -40,7 +40,7 @@ function drun() {
 	fi
 	docker run -ti -v /dev/bus/usb:/dev/bus/usb \
 		-v $(realpath $PWD/..):$(realpath $PWD/..) \
-		swedishembedded/develop:latest bash -c "cd $PWD && $*"
+		swedishembedded/workstation:latest bash -c "cd $PWD && $*"
 }
 
 export PATH=~/.local/bin:"$PATH"

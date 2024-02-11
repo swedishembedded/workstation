@@ -82,22 +82,26 @@ RUN apt-get -y update && \
 		ovmf \
 		xz-utils \
 		apt-utils \
-		thrift-compiler
+		thrift-compiler && \
+	python3 -m pip install --upgrade pip && \
+	apt-get clean -y && \
+	apt-get autoremove --purge -y && \
+	rm -rf /var/lib/apt/lists/*
 
 # Install multi-lib gcc (x86 only)
 RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
-	apt-get install --no-install-recommends -y \
-		gcc-multilib \
-		g++-multilib \
-	; fi
-
-# Install i386 packages (x86 only)
-RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
-	dpkg --add-architecture i386 && \
-	apt-get -y update && \
-	apt-get -y upgrade && \
-	apt-get install --no-install-recommends -y \
-		libsdl2-dev:i386 \
+		apt-get -y update && \
+		apt-get -y upgrade && \
+		apt-get install --no-install-recommends -y \
+			gcc-multilib \
+			g++-multilib && \
+		dpkg --add-architecture i386 && \
+		apt-get -y update && \
+		apt-get install --no-install-recommends -y \
+			libsdl2-dev:i386 && \
+		apt-get clean -y && \
+		apt-get autoremove --purge -y && \
+		rm -rf /var/lib/apt/lists/* \
 	; fi
 
 # Initialise system locale
@@ -115,12 +119,8 @@ RUN python3 -m pip install -U --no-cache-dir pip && \
 		-r https://raw.githubusercontent.com/zephyrproject-rtos/mcuboot/main/scripts/requirements.txt \
 		GitPython imgtool junitparser numpy protobuf PyGithub \
 		pylint sh statistics west && \
-	pip3 check
-
-# Clean up stale packages
-RUN apt-get clean -y && \
-	apt-get autoremove --purge -y && \
-	rm -rf /var/lib/apt/lists/*
+	pip3 check && \
+	pip3 cache purge
 
 # Create 'user' account
 RUN groupadd -g $GID -o user
