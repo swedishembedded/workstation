@@ -147,7 +147,7 @@ let c_space_errors = 1
 
 " Load vim-plug {{{
 " Install vim plug if not installed
-let data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
+let data_dir = has('nvim') ? stdpath('config') : '~/.vim'
 if empty(glob(data_dir . '/autoload/plug.vim'))
   silent execute '!curl -fLo '.data_dir.'/autoload/plug.vim --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
   autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
@@ -639,6 +639,7 @@ lua << EOF
 local lspconfig = require'lspconfig'
 lspconfig.vimls.setup {}
 lspconfig.dockerls.setup {}
+lspconfig.pyright.setup {}
 lspconfig.robotframework_ls.setup({})
 lspconfig.clangd.setup{
 	on_attach = function(client, bufnr)
