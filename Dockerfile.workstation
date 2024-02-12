@@ -96,6 +96,7 @@ RUN npm install -g \
 RUN pip3 install \
 	pre-commit \
 	mypy \
+	robotframework-lsp \
 	pynvim && \
 	echo "Installing renode-run" && \
 	pip3 install --upgrade git+https://github.com/antmicro/renode-run.git && \
@@ -117,22 +118,7 @@ RUN wget -q https://ftpmirror.gnu.org/emacs/emacs-${EMACS_VERSION}.tar.gz https:
 	cd .. && \
 	rm -rf emacs-*
 
-USER user
-# Install DooM emacs
-RUN git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.emacs.d && \
-	~/.emacs.d/bin/doom install --no-env --no-fonts
-
-# Add configuration
-COPY --chown=user:user conf/doom /home/user/.doom.d/
-RUN ~/.emacs.d/bin/doom env && \
-	~/.emacs.d/bin/doom upgrade
 USER root
-
-COPY --chown=user:user conf/.tmux.conf /home/user/.tmux.conf
-COPY --chown=user:user conf/.tmux.conf.local /home/user/.tmux.conf.local
-COPY --chown=user:user conf/tmuxinator /home/user/.config/tmuxinator
-COPY --chown=user:user conf/.bashrc /home/user/.bashrc
-COPY --chown=user:user conf/pygdbinit /home/user/.pygdbinit
 
 # Install neovim
 RUN git clone https://github.com/neovim/neovim.git && \
@@ -144,8 +130,6 @@ RUN git clone https://github.com/neovim/neovim.git && \
 	rm -rf neovim
 
 
-COPY --chown=user:user conf/nvim /home/user/.config/nvim/
-
 # Add entrypoint script
 ADD entrypoint.sh /home/user/init
 RUN dos2unix /home/user/init
@@ -154,20 +138,86 @@ ENTRYPOINT ["/home/user/init"]
 # Adjust directory permissions
 RUN mkdir /workspaces/
 RUN chown user:user /workspaces/
-RUN chown user:user /home/user/.config
 
 # Switch to 'user' context
 USER user
 
-# Install nvim plugin manager and vim plugins
+# Install DooM emacs as user
+RUN git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.emacs.d && \
+	~/.emacs.d/bin/doom install --no-env --no-fonts
+
+# Add configuration as user
+COPY --chown=user:user conf/doom /home/user/.doom.d/
+RUN ~/.emacs.d/bin/doom env && \
+	~/.emacs.d/bin/doom upgrade
+
+COPY --chown=user:user conf/.tmux.conf /home/user/.tmux.conf
+COPY --chown=user:user conf/.tmux.conf.local /home/user/.tmux.conf.local
+COPY --chown=user:user conf/tmuxinator /home/user/.config/tmuxinator
+COPY --chown=user:user conf/.bashrc /home/user/.bashrc
+COPY --chown=user:user conf/pygdbinit /home/user/.pygdbinit
+COPY --chown=user:user conf/nvim /home/user/.config/nvim/
+RUN chown user:user /home/user/.config
+
+# Install nvim plugin manager, vim plugins and syntax hightlighting for
+# important languages.
 # NOTE: current vim config fails plug install the first time but it does succeed
 # the second time so that's why we need to run it twice and ignore the first
 # failure.
+# NOTE: the TSUpdate commands need to be run on separate lines because vim has a
+# limit on how many can be chained together.
 RUN curl -fLo ~/.local/share/nvim/site/autoload/plug.vim \
 	--create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim && \
-	nvim -es -u ~/.config/nvim/init.vim '+PlugInstall --sync' +qa || true && \
-	nvim -es -u ~/.config/nvim/init.vim '+PlugInstall --sync' +qa && \
-	nvim -es -u ~/.config/nvim/init.vim '+TSUpdate lua' '+TSUpdate vimdoc' +qa
+	nvim -e --headless '+PlugInstall --sync' +qa || true && \
+	nvim -e --headless '+PlugInstall --sync' +qa && \
+	nvim -e --headless '+TSUpdate angular' +qa && \
+	nvim -e --headless '+TSUpdate bash' +qa && \
+	nvim -e --headless '+TSUpdate bibtex' +qa && \
+	nvim -e --headless '+TSUpdate c' +qa && \
+	nvim -e --headless '+TSUpdate c_sharp' +qa && \
+	nvim -e --headless '+TSUpdate cmake' +qa && \
+	nvim -e --headless '+TSUpdate commonlisp' +qa && \
+	nvim -e --headless '+TSUpdate cpp' +qa && \
+	nvim -e --headless '+TSUpdate csv' +qa && \
+	nvim -e --headless '+TSUpdate devicetree' +qa && \
+	nvim -e --headless '+TSUpdate diff' +qa && \
+	nvim -e --headless '+TSUpdate disassembly' +qa && \
+	nvim -e --headless '+TSUpdate dockerfile' +qa && \
+	nvim -e --headless '+TSUpdate doxygen' +qa && \
+	nvim -e --headless '+TSUpdate ebnf' +qa && \
+	nvim -e --headless '+TSUpdate elixir' +qa && \
+	nvim -e --headless '+TSUpdate erlang' +qa && \
+	nvim -e --headless '+TSUpdate git_rebase' +qa && \
+	nvim -e --headless '+TSUpdate gitcommit' +qa && \
+	nvim -e --headless '+TSUpdate glsl' +qa && \
+	nvim -e --headless '+TSUpdate go' +qa && \
+	nvim -e --headless '+TSUpdate haskell' +qa && \
+	nvim -e --headless '+TSUpdate hlsl' +qa && \
+	nvim -e --headless '+TSUpdate html' +qa && \
+	nvim -e --headless '+TSUpdate json' +qa && \
+	nvim -e --headless '+TSUpdate kconfig' +qa && \
+	nvim -e --headless '+TSUpdate latex' +qa && \
+	nvim -e --headless '+TSUpdate ledger' +qa && \
+	nvim -e --headless '+TSUpdate linkerscript' +qa && \
+	nvim -e --headless '+TSUpdate lua' +qa && \
+	nvim -e --headless '+TSUpdate luadoc' +qa && \
+	nvim -e --headless '+TSUpdate markdown_inline' +qa && \
+	nvim -e --headless '+TSUpdate matlab' +qa && \
+	nvim -e --headless '+TSUpdate prisma' +qa && \
+	nvim -e --headless '+TSUpdate python' +qa && \
+	nvim -e --headless '+TSUpdate regex' +qa && \
+	nvim -e --headless '+TSUpdate robot' +qa && \
+	nvim -e --headless '+TSUpdate rst' +qa && \
+	nvim -e --headless '+TSUpdate tsx' +qa && \
+	nvim -e --headless '+TSUpdate rust' +qa && \
+	nvim -e --headless '+TSUpdate sql' +qa && \
+	nvim -e --headless '+TSUpdate ssh_config' +qa && \
+	nvim -e --headless '+TSUpdate toml' +qa && \
+	nvim -e --headless '+TSUpdate typescript' +qa && \
+	nvim -e --headless '+TSUpdate udev' +qa && \
+	nvim -e --headless '+TSUpdate vim' +qa && \
+	nvim -e --headless '+TSUpdate vimdoc' +qa && \
+	nvim -e --headless '+TSUpdate yaml' +qa
 
 # Configure environment variables
 ENV DISPLAY=:0

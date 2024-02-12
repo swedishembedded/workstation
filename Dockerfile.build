@@ -10,6 +10,7 @@ ARG LLVM_VERSION=16
 ARG BSIM_VERSION=v2.1
 ARG SPARSE_VERSION=9212270048c3bd23f56c20a83d4f89b870b2b26e
 ARG PROTOC_VERSION=21.7
+ARG OSS_CAD_SUITE_VERSION=20240211
 ARG WGET_ARGS="-q --show-progress --progress=bar:force:noscroll --no-check-certificate"
 
 
@@ -165,6 +166,10 @@ RUN wget https://github.com/ledger/ledger/archive/refs/tags/v${LEDGER_VERSION}.t
 	sudo make -C build install && \
 	popd && \
 	rm -rf ledger-*
+
+# OSS CAD Suite (full suite for building verilog stuff)
+RUN wget ${WGET_ARGS} https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-02-11/oss-cad-suite-linux-x64-${OSS_CAD_SUITE_VERSION}.tgz && \
+	tar xf oss-cad-suite-linux-x64-${OSS_CAD_SUITE_VERSION}.tgz -C /opt
 
 # Run the Zephyr SDK setup script as 'user' in order to ensure that the
 # `Zephyr-sdk` CMake package is located in the package registry under the

@@ -99,8 +99,8 @@ release:
   script:
     - echo "Making a release"
   release:
-    name: v0.26.5-0
-    tag_name: v0.26.5-0
+    name: v0.26.6-0
+    tag_name: v0.26.6-0
     description: 'Official Image'
   needs: []
 
@@ -110,7 +110,7 @@ publish:
   tags:
     - docker-dind
   variables:
-    TAG: v0.26.5-0
+    TAG: v0.26.6-0
   parallel:
     matrix:
       - IMAGE: [base, build, workstation]
