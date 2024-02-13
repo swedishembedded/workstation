@@ -57,4 +57,3 @@ export PS1="\[\033[32m\]dev\[\033[00m\]:\[\033[34m\]\w\[\033[31m\]\$(parse_git_b
 export WASMTIME_HOME="$HOME/.wasmtime"
 export PATH="$WASMTIME_HOME/bin:$PATH"
 
-eval $(ssh-agent)

@@ -91,6 +91,7 @@ bootstrap:
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
+  allow_failure: true
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       when: manual
