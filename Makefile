@@ -1,18 +1,16 @@
-image:
-	./scripts/build base
-	./scripts/build build
-	./scripts/build workstation
+all: base build workstation
+push: base/push build/push workstation/push
 
-.PHONY: image
-
-define build_image
+define define_image
 $(1): Dockerfile.$(1)
 	docker build \
 		-f Dockerfile.$(1) \
 		-t swedishembedded/$(1):latest .
-.PHONY: $(1)
+$(1)/push:
+	docker push swedishembedded/$(1):latest
+.PHONY: $(1) $(1)/push
 endef
 
-$(eval $(call build_image,workstation))
-$(eval $(call build_image,build))
-$(eval $(call build_image,base))
+$(eval $(call define_image,base))
+$(eval $(call define_image,build))
+$(eval $(call define_image,workstation))

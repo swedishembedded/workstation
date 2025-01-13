@@ -92,10 +92,14 @@ map <a-j> :res -5<CR>
 map <a-k> :res +5<CR>
 
 " These lines define key mappings for moving the cursor vertically more quickly
-nmap <S-j> 5j<CR>
-vmap <S-j> 5j<CR>
-nmap <S-k> 5k<CR>
-vmap <S-k> 5k<CR>
+nnoremap <S-h> 5h
+vnoremap <S-h> 5h
+nnoremap <S-l> 5l
+vnoremap <S-l> 5l
+nnoremap <S-j> 5j
+vnoremap <S-j> 5j
+nnoremap <S-k> 5k
+vnoremap <S-k> 5k
 
 " Map r to redo
 nmap r :redo<CR>
@@ -581,7 +585,7 @@ if has_key(plugs, 'coc.nvim')
 	\	'--header-insertion-decorators=0',
 	\	'--completion-style=detailed']
 
-	nnoremap <silent> H :call <sid>show_documentation()<cr>
+	nnoremap <silent> ? :call <sid>show_documentation()<cr>
 	function! s:show_documentation()
 		if index(['vim', 'help'], &filetype) >= 0
 			execute 'help ' . expand('<cword>')
@@ -603,10 +607,10 @@ if has_key(plugs, 'coc.nvim')
 	" NOTE: Use command ':verbose imap <tab>' to make sure tab is not mapped by
 	" other plugin before putting this into your config
 	inoremap <silent><expr> <TAB>
-		\ coc#pum#visible() ? coc#pum#next(1) :
+		\ coc#pum#visible() ? coc#pum#confirm() :
 		\ CheckBackspace() ? "\<Tab>" :
 		\ coc#refresh()
-	inoremap <expr><S-TAB> coc#pum#visible() ? coc#pum#prev(1) : "\<C-h>"
+	" inoremap <expr><S-TAB> coc#pum#visible() ? coc#pum#prev(1) : "\<C-h>"
 	function! CheckBackspace() abort
 		let col = col('.') - 1
 		return !col || getline('.')[col - 1]  =~# '\s'
@@ -773,12 +777,6 @@ lspconfig.ts_ls.setup {
 }
 lspconfig.robotframework_ls.setup({})
 lspconfig.clangd.setup{
-	on_attach = function(client, bufnr)
-		require'completion'.on_attach(client, bufnr)
-	end,
-	flags = {
-		debounce_text_changes = 150,
-	},
 	cmd = { "clangd", "--background-index" },
 	filetypes = { "c", "cpp" },
 }
@@ -904,7 +902,7 @@ endif
 " }}}
 
 lua << EOF
-vim.g.editorconfig = true
+vim.g.editorconfig = false
 EOF
 
 runtime typescript.vim
