@@ -178,8 +178,9 @@ call plug#begin()
 	" Plug '~/.config/nvim/mrtee'
 	" Plug 'dhruvasagar/vim-dotoo' " managing to-do lists.
 	" Plug 'hrsh7th/nvim-compe' " versatile auto-completion.
+	Plug 'github/copilot.vim' " AI-assisted coding.
 	Plug 'dhruvasagar/vim-table-mode'
-	Plug 'akinsho/bufferline.nvim', { 'tag': 'v3.7.0' } " plugin for tab line at the top
+	Plug 'akinsho/bufferline.nvim', { 'tag': 'v4.9.0' } " plugin for tab line at the top
 	Plug 'catppuccin/nvim', { 'as': 'catppuccin' } " a beautiful color scheme
 	Plug 'dense-analysis/ale' " linting and fixing code.
 	Plug 'habamax/vim-asciidoctor' " editing AsciiDoc files.
@@ -467,32 +468,6 @@ if has_key(plugs, 'vim-dotoo')
 endif
 " }}}
 
-" Plugin: nvim-orgmode/orgmode {{{
-if has_key(plugs, 'orgmode')
-	lua << EOF
-	-- Load custom treesitter grammar for org filetype
-	require('orgmode').setup_ts_grammar()
-
-	-- Treesitter configuration
-	require('nvim-treesitter.configs').setup {
-		-- If TS highlights are not enabled at all, or disabled via `disable` prop,
-		-- highlighting will fallback to default Vim syntax highlighting
-		highlight = {
-			enable = true,
-			-- Required for spellcheck, some LaTex highlights and
-			-- code block highlights that do not have ts grammar
-			additional_vim_regex_highlighting = {'org'},
-		},
-		ensure_installed = {'org'}, -- Or run :TSUpdate org
-	}
-	require('orgmode').setup({
-		org_agenda_files = {'~/board.org'},
-		org_default_notes_file = '~/refile.org',
-	})
-EOF
-endif
-" }}}
-
 " Plugin: habamax/vim-asciidoctor {{{
 if has_key(plugs, 'vim-asciidoctor')
 	let g:asciidoctor_folding = 1
@@ -697,11 +672,6 @@ if has_key(plugs, 'coc.nvim')
 	" Add `:OR` command for organize imports of the current buffer
 	command! -nargs=0 OR   :call     CocActionAsync('runCommand', 'editor.action.organizeImport')
 
-	" Add (Neo)Vim's native statusline support
-	" NOTE: Please see `:h coc-status` for integrations with external plugins that
-	" provide custom statusline: lightline.vim, vim-airline
-	set statusline^=%{coc#status()}%{get(b:,'coc_current_function','')}
-
 	" Mappings for CoCList
 	" Show all diagnostics
 	nnoremap <silent><nowait> <space>a  :<C-u>CocList diagnostics<cr>
@@ -775,7 +745,6 @@ let g:NERDTreeGitStatusIndicatorMapCustom = {
 " Plugin: nvim-orgmode/orgmode {{{
 if has_key(plugs, 'orgmode')
 	lua << EOF
-	require('orgmode').setup_ts_grammar()
 	require('orgmode').setup({
 		org_agenda_files = {'~/board.org'},
 		org_default_notes_file = '~/refile.org',
@@ -791,8 +760,14 @@ lspconfig.vimls.setup {}
 lspconfig.dockerls.setup {}
 lspconfig.pyright.setup {}
 lspconfig.tailwindcss.setup{}
-lspconfig.tsserver.setup {
-  on_attach = on_attach,
+lspconfig.ts_ls.setup {
+  on_attach = function(client, bufnr)
+	client.config.flags = {
+      debounce_text_changes = 150,  -- Adjust this value as needed
+    }
+    client.resolved_capabilities.document_formatting = false
+    client.resolved_capabilities.document_range_formatting = false
+  end,
   filetypes = { "typescript", "typescriptreact", "typescript.tsx" },
   cmd = { "typescript-language-server", "--stdio" }
 }
@@ -931,3 +906,5 @@ endif
 lua << EOF
 vim.g.editorconfig = true
 EOF
+
+runtime typescript.vim

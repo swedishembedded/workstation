@@ -16,6 +16,6 @@ sphinx-copybutton
 recommonmark==0.6.0
 CommonMark>=0.9.1
 m2r2>=0.3.2
-pygit2<=1.10
+pygit2>=1.10
 pyyaml>=5.1
 myst-parser

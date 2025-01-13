@@ -14,3 +14,5 @@ $(1): Dockerfile.$(1)
 endef
 
 $(eval $(call build_image,workstation))
+$(eval $(call build_image,build))
+$(eval $(call build_image,base))

@@ -2,9 +2,9 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE:-swedishembedded/build:latest}
 
-ARG EMACS_VERSION=28.1
-ARG NEOVIM_VERSION=v0.9.5
-ARG NODE_VERSION v21.5.0
+ARG EMACS_VERSION=29.3
+ARG NEOVIM_VERSION=v0.10.0
+ARG NODE_VERSION=22
 
 SHELL ["bash", "-c"]
 USER root
@@ -13,7 +13,7 @@ RUN mkdir -p /build/platform && \
 
 RUN apt-get update && \
 	echo "Installing latest nodejs packages" && \
-	curl -sL https://deb.nodesource.com/setup_21.x  | bash - && \
+	curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x  | bash - && \
 	apt-get -qy install nodejs && \
 	echo "Installing emacs dependencies" && \
 	apt-get -qy install --no-install-recommends \
@@ -21,7 +21,7 @@ RUN apt-get update && \
 		ncurses-dev \
 		libacl1-dev \
 		libgccjit0 \
-		libgccjit-10-dev \
+		libgccjit-14-dev \
 		libjansson4 \
 		libjansson-dev \
 		gnutls-dev \
@@ -48,7 +48,7 @@ RUN apt-get update && \
 		libnotify-dev \
 		libnss3 \
 		libxss1 \
-		libasound2 \
+		libasound2-dev \
 		libxtst6 \
 		xauth \
 		xvfb && \
@@ -82,15 +82,19 @@ RUN gem install \
 	neovim
 
 # Install additional npm packages
+RUN npm install -g nmp
 RUN npm install -g \
-	npm \
-	tree-sitter \
-	neovim \
-	pyright \
 	bash-language-server \
+	neovim \
+	npm \
+	pyright \
+	tailwindcss-language-server \
+	tree-sitter \
+	typescript-language-server \
+	vim-language-server \
 	yaml-language-server \
 	yarn \
-	vim-language-server && \
+	&& \
 	npm cache clean --force
 
 # Install additional python packages
@@ -144,13 +148,14 @@ RUN chown -R user:user /home/user/
 USER user
 
 # Install DooM emacs as user
-RUN git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.emacs.d && \
-	~/.emacs.d/bin/doom install --no-env --no-fonts
+RUN git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.config/emacs && \
+	~/.config/emacs/bin/doom env && \
+	~/.config/emacs/bin/doom install
 
 # Add configuration as user
-COPY --chown=user:user conf/doom /home/user/.doom.d/
-RUN ~/.emacs.d/bin/doom env && \
-	~/.emacs.d/bin/doom upgrade
+COPY --chown=user:user conf/doom /home/user/.config/emacs/
+RUN ~/.config/emacs/bin/doom env && \
+	~/.config/emacs/bin/doom upgrade
 
 COPY --chown=user:user conf/.tmux.conf /home/user/.tmux.conf
 COPY --chown=user:user conf/.tmux.conf.local /home/user/.tmux.conf.local
@@ -158,19 +163,6 @@ COPY --chown=user:user conf/tmuxinator /home/user/.config/tmuxinator
 COPY --chown=user:user conf/.bashrc /home/user/.bashrc
 COPY --chown=user:user conf/pygdbinit /home/user/.pygdbinit
 COPY --chown=user:user conf/nvim /home/user/.config/nvim/
-
-# Install nvim plugin manager, vim plugins and syntax hightlighting for
-# important languages.
-# NOTE: current vim config fails plug install the first time but it does succeed
-# the second time so that's why we need to run it twice and ignore the first
-# failure.
-# NOTE: the TSUpdate commands need to be run on separate lines because vim has a
-# limit on how many can be chained together.
-USER root
-
-RUN chown -R user:user /home/user/.config
-
-USER user
 
 RUN curl -fLo ~/.local/share/nvim/site/autoload/plug.vim \
 	--create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim && \

@@ -4,9 +4,8 @@ ARG BASE_IMAGE
 FROM ${BASE_IMAGE:-swedishembedded/base:latest}
 
 ARG ZSDK_VERSION=0.16.3
-ARG DOXYGEN_VERSION=1.9.4
-ARG RENODE_VERSION=1.13.3
-ARG LLVM_VERSION=16
+ARG DOXYGEN_VERSION=1.12.0
+ARG RENODE_VERSION=1.15.3
 ARG BSIM_VERSION=v2.1
 ARG SPARSE_VERSION=9212270048c3bd23f56c20a83d4f89b870b2b26e
 ARG PROTOC_VERSION=21.7
@@ -27,13 +26,13 @@ RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
 # Install renode (x86 only)
 # NOTE: Renode is currently only available for x86_64 host.
 RUN if [ "${HOSTTYPE}" = "x86_64" ]; then \
-		echo "deb [trusted=yes] https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list && \
-		sudo apt-get update && \
-		wget ${WGET_ARGS} https://github.com/renode/renode/releases/download/v${RENODE_VERSION}/renode_${RENODE_VERSION}_amd64.deb && \
-		apt-get install -y ./renode_${RENODE_VERSION}_amd64.deb && \
-		rm renode_${RENODE_VERSION}_amd64.deb && \
-		pip3 install -r /opt/renode/tests/requirements.txt --no-cache-dir && \
-		pip3 cache purge \
+	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF && \
+	echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | tee /etc/apt/sources.list.d/mono-official-stable.list && \
+	apt-get -y update && \
+	wget ${WGET_ARGS} https://github.com/renode/renode/releases/download/v${RENODE_VERSION}/renode_${RENODE_VERSION}_amd64.deb && \
+	apt-get install -y ./renode_${RENODE_VERSION}_amd64.deb && \
+	rm renode_${RENODE_VERSION}_amd64.deb && \
+	pip3 install -r /opt/renode/tests/requirements.txt --no-cache-dir \
 	; fi
 
 # Install BSIM
@@ -52,23 +51,25 @@ RUN apt-get update && \
 	apt-get install -qy curl && \
 	echo "Installing extra dependencies for documentation generation" && \
 	apt-get -qy install --no-install-recommends \
-	doxygen-latex dot2tex  \
+	bundler \
+	dot2tex  \
+	doxygen-latex \
+	latexmk \
 	librsvg2-bin \
+	ruby \
+	ruby-dev \
+	rubygems \
+	texlive-fonts-recommended \
 	texlive-latex-base \
 	texlive-latex-extra \
-	latexmk \
-	texlive-fonts-recommended \
-	ruby \
-	rubygems \
-	ruby-dev \
-	bundler && \
+	&& \
 	echo "Installing dependencies for asciidoc pdf generation" && \
 	apt-get -qy install --no-install-recommends \
 	curl aspell aspell-en pandoc && \
 	echo "Installing dependencies for code checking" && \
 	apt-get -qy install --no-install-recommends \
 	clang-format \
-	libclang-12-dev \
+	libclang-19-dev \
 	libgtest-dev \
 	cscope && \
 	echo "Installing C++ libraries" && \
@@ -98,11 +99,31 @@ ENV CARGO_HOME=/opt/rust
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path
 ENV PATH=$PATH:/opt/rust/bin
 
+# Install target support for Rust.  This is the list as of the current
+# time.
+RUN \
+	/opt/rust/bin/rustup target install riscv32i-unknown-none-elf && \
+	/opt/rust/bin/rustup target install riscv64imac-unknown-none-elf && \
+	/opt/rust/bin/rustup target install thumbv6m-none-eabi && \
+	/opt/rust/bin/rustup target install thumbv7em-none-eabi && \
+	/opt/rust/bin/rustup target install thumbv7m-none-eabi && \
+	/opt/rust/bin/rustup target install thumbv8m.main-none-eabi && \
+	/opt/rust/bin/rustup target install x86_64-unknown-none
+
 # Install uefi-run utility
 RUN cargo install uefi-run --root /usr
 
+RUN apt-get update && \
+	apt-get install -qy software-properties-common && \
+	apt-get clean -y 
+
 # Install LLVM and Clang
-RUN wget ${WGET_ARGS} https://apt.llvm.org/llvm.sh && \
+ARG LLVM_VERSION=18
+RUN \
+	which lsb_release && \
+	which gpg && \
+	which add-apt-repository && \
+	wget ${WGET_ARGS} https://apt.llvm.org/llvm.sh && \
 	chmod +x llvm.sh && \
 	./llvm.sh ${LLVM_VERSION} all && \
 	rm -f llvm.sh
@@ -134,6 +155,10 @@ RUN mkdir -p /opt/toolchains && \
 	rm zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.xz
 
 ARG LEDGER_VERSION=3.3.2
+
+RUN apt-get update && \
+	apt-get install -qy libgit2-dev && \
+	apt-get clean -y 
 
 # install additional requirements
 COPY requirements.txt /tmp/
