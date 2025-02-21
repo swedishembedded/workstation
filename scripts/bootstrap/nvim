@@ -3,11 +3,10 @@
 set -e
 set -o pipefail
 
-NVIM_VERSION="v0.9.0"
+NVIM_VERSION="v0.10.0"
 ROOT="$(realpath $(dirname $BASH_SOURCE)/../..)"
 BUILD_DIR=`mktemp -d -p "/tmp/"`
 
-sudo apt-get remove neovim || {}
 sudo apt-get update && sudo apt install -qy \
 	unzip \
 	cmake \
@@ -22,30 +21,42 @@ sudo apt-get update && sudo apt install -qy \
 	curl
 
 # Install linters
-pip3 install \
-	robotframework-lint \
-	pynvim \
-	neovim-remote
+#pip3 install \
+#	robotframework-lint \
+#	pynvim \
+#	neovim-remote
 
 # Install neovim if version does not match
 NVIM_INSTALLED_VERSION=""
 which nvim && {
 	NVIM_INSTALLED_VERSION="v$(nvim --version | head -1 | egrep -o '[0-9]+\.[0-9]+.[0-9]+')"
 }
-#if [[ "$NVIM_VERSION" != "$NVIM_INSTALLED_VERSION" ]]; then
+if [[ "$NVIM_VERSION" != "$NVIM_INSTALLED_VERSION" ]]; then
 	echo "Installing nvim version $NVIM_VERSION"
 	(cd $BUILD_DIR && git clone https://github.com/neovim/neovim.git)
 	(cd $BUILD_DIR/neovim && git checkout $NVIM_VERSION)
 	make -j $(nproc) -C $BUILD_DIR/neovim
+	sudo apt-get remove neovim || {}
 	sudo make -C $BUILD_DIR/neovim install
-#else
-#	echo "Found NVIM version $NVIM_INSTALLED_VERSION. Not compiling."
-#fi
+else
+	echo "Found NVIM version $NVIM_INSTALLED_VERSION. Not compiling."
+fi
 
 # Vim configuration
 curl -fLo ~/.config/nvim/autoload/plug.vim --create-dirs \
 	https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+
+nvim -e --headless '+PlugInstall --sync' +qa || true
+nvim -e --headless '+PlugInstall --sync' +qa
+nvim -e --headless '+TSInstall all'
+
 mkdir -p ~/.config/nvim/
 cp -R $ROOT/conf/nvim/* ~/.config/nvim/
-nvim --headless +PlugInstall +qall
-nvim --headless +CocInstall coc-clangd +qall
+
+# Download and install Terminess Nerd Font
+FONT_DIR=`mktemp -d -p "/tmp/"`
+curl -L -o $FONT_DIR/Terminus.zip https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/Terminus.zip
+mkdir -p ~/.local/share/fonts
+unzip -o $FONT_DIR/Terminus.zip -d ~/.local/share/fonts/
+fc-cache -f -v
+rm -rf $FONT_DIR

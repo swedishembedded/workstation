@@ -706,12 +706,12 @@ if has_key(plugs, 'nvim-treesitter')
 			highlight = {
 				enable = true, -- false will disable the whole extension
 				extended_mode = true,
-			use_languagetree = true,
-			disable = {}, -- list of language that will be disabled
+				use_languagetree = true,
+				disable = {}, -- list of language that will be disabled
 				-- Highlight also non-parentheses delimiters, boolean or table: lang -> boolean
 				-- Required for spellcheck, some LaTex highlights and
 				-- code block highlights that do not have ts grammar
-				additional_vim_regex_highlighting = {'org'},
+				-- additional_vim_regex_highlighting = {'org'},
 			},
 			rainbow = {
 				enable = true,
@@ -720,7 +720,7 @@ if has_key(plugs, 'nvim-treesitter')
 				colors = {}, -- table of hex strings
 				termcolors = {} -- table of colour name strings
 			},
-			ensure_installed = {'org', 'c'},
+			ensure_installed = {'c'},
 		}
 EOF
 endif

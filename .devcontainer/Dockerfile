@@ -1,0 +1,1 @@
+FROM swedishembedded/workstation:latest

@@ -2,10 +2,34 @@
 
 ROOT="$(realpath $(dirname $BASH_SOURCE)/../..)"
 
-sudo apt-get update && sudo apt-get install -qy \
-	docker.io
+# Create Docker apt keyring directory
+sudo mkdir -p /etc/apt/keyrings
+sudo chmod 0755 /etc/apt/keyrings
+
+# Download and add Docker's official GPG key
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add Docker repository
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Update apt cache
+sudo apt-get update
+
+# Install Docker packages
+sudo apt-get install -y \
+    docker-ce \
+    docker-ce-cli \
+    containerd.io \
+    docker-buildx-plugin \
+    docker-compose-plugin
 
 # Add current user to docker group
 if [[ ! -z "$USER" ]]; then
-	sudo usermod -aG docker $USER
+    sudo usermod -aG docker $USER
 fi
+
+# Test Docker installation
+echo "Testing Docker installation..."
+sudo docker run hello-world
