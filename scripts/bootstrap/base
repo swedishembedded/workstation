@@ -10,6 +10,15 @@ sudo apt-get install -qy \
 	gnome-tweaks \
 	libfuse2t64
 
+# Set locale settings for English language with Swedish time format
+# Set locale in /etc/default/locale directly
+sudo bash -c 'cat > /etc/default/locale << EOF
+LANG=en_US.UTF-8
+LC_TIME=en_GB.UTF-8
+LC_NUMERIC=en_GB.UTF-8
+LC_MEASUREMENT=en_GB.UTF-8
+EOF'
+
 # Get user info from system settings if not already set
 EMAIL=$(git config --global user.email)
 NAME=$(git config --global user.name)
