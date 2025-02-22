@@ -1,10 +1,10 @@
 # CI Image (ci)
 
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-swedishembedded/base:latest}
+FROM ${BASE_IMAGE:-swedishembedded/rust:latest}
 
 ARG ZSDK_VERSION=0.16.3
-ARG DOXYGEN_VERSION=1.12.0
+ARG DOXYGEN_VERSION=1.9.4
 ARG RENODE_VERSION=1.15.3
 ARG BSIM_VERSION=v2.1
 ARG SPARSE_VERSION=9212270048c3bd23f56c20a83d4f89b870b2b26e
@@ -12,6 +12,7 @@ ARG PROTOC_VERSION=21.7
 ARG OSS_CAD_SUITE_VERSION=20240211
 ARG WGET_ARGS="-q --show-progress --progress=bar:force:noscroll --no-check-certificate"
 
+USER root
 
 # Install Doxygen (x86 only)
 # NOTE: Pre-built Doxygen binaries are only available for x86_64 host.
@@ -69,7 +70,6 @@ RUN apt-get update && \
 	echo "Installing dependencies for code checking" && \
 	apt-get -qy install --no-install-recommends \
 	clang-format \
-	libclang-19-dev \
 	libgtest-dev \
 	cscope && \
 	echo "Installing C++ libraries" && \
@@ -92,23 +92,6 @@ RUN apt-get update && \
 	apt-get clean -y && \
 	apt-get autoremove --purge -y && \
 	rm -rf /var/lib/apt/lists/*
-
-# Install rustup
-ENV RUSTUP_HOME=/opt/rust
-ENV CARGO_HOME=/opt/rust
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path
-ENV PATH=$PATH:/opt/rust/bin
-
-# Install target support for Rust.  This is the list as of the current
-# time.
-RUN \
-	/opt/rust/bin/rustup target install riscv32i-unknown-none-elf && \
-	/opt/rust/bin/rustup target install riscv64imac-unknown-none-elf && \
-	/opt/rust/bin/rustup target install thumbv6m-none-eabi && \
-	/opt/rust/bin/rustup target install thumbv7em-none-eabi && \
-	/opt/rust/bin/rustup target install thumbv7m-none-eabi && \
-	/opt/rust/bin/rustup target install thumbv8m.main-none-eabi && \
-	/opt/rust/bin/rustup target install x86_64-unknown-none
 
 # Install uefi-run utility
 RUN cargo install uefi-run --root /usr
@@ -205,6 +188,8 @@ RUN sudo -E -- bash -c ' \
 	/opt/toolchains/zephyr-sdk-${ZSDK_VERSION}/setup.sh -c && \
 	chown -R user:user /home/user/.cmake \
 	'
+
+ENV HOSTNAME=zephyr
 
 USER root
 

@@ -1,6 +1,6 @@
 # This is our develop image
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-swedishembedded/build:latest}
+FROM ${BASE_IMAGE:-swedishembedded/zephyr:latest}
 
 ARG EMACS_VERSION=29.3
 ARG NEOVIM_VERSION=v0.10.0
@@ -11,71 +11,6 @@ USER root
 RUN mkdir -p /build/platform && \
 	chown -R user:user /build
 
-RUN apt-get update && \
-	echo "Installing latest nodejs packages" && \
-	curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x  | bash - && \
-	apt-get -qy install nodejs && \
-	echo "Installing emacs dependencies" && \
-	apt-get -qy install --no-install-recommends \
-		cmake \
-		ncurses-dev \
-		libacl1-dev \
-		libgccjit0 \
-		libgccjit-14-dev \
-		libjansson4 \
-		libjansson-dev \
-		gnutls-dev \
-		ripgrep \
-		wget && \
-	echo "Installing neovim dependencies" && \
-	apt-get -qy install --no-install-recommends \
-		luarocks \
-		xclip \
-		biber \
-		gettext && \
-	echo "Installing terminal utilities" && \
-	apt-get -qy install --no-install-recommends \
-		tree \
-		tig \
-		gitk \
-		picocom \
-		tmux && \
-	echo "Installing cypress dependencies" && \
-	apt-get -qy install --no-install-recommends \
-		libgtk2.0-0 \
-		libgtk-3-0 \
-		libgbm-dev \
-		libnotify-dev \
-		libnss3 \
-		libxss1 \
-		libasound2-dev \
-		libxtst6 \
-		xauth \
-		xvfb && \
-	echo "Installing language servers and support tools" && \
-	apt-get -qy install --no-install-recommends \
-		clangd \
-		bash-completion \
-		yamllint && \
-	echo "Installing debugging tools" && \
-	apt-get -qy install --no-install-recommends \
-		btop \
-		bc \
-		gdb-multiarch && \
-	echo "Installing additional tools" && \
-	apt-get install --no-install-recommends -y \
-		openbox \
-		python3-xdg \
-		libpython3-dev \
-		xvfb \
-		xterm \
-		iputils-ping \
-		xz-utils && \
-	echo "Cleaning up cache.." && \
-	apt-get clean -y && \
-	apt-get autoremove --purge -y && \
-	rm -rf /var/lib/apt/lists/*
-
 # Install ruby packages
 RUN gem install \
 	tmuxinator \
@@ -85,8 +20,6 @@ RUN gem install \
 RUN npm install -g nmp
 RUN npm install -g \
 	bash-language-server \
-	neovim \
-	npm \
 	pyright \
 	tailwindcss-language-server \
 	tree-sitter \
@@ -134,16 +67,6 @@ RUN git clone https://github.com/neovim/neovim.git && \
 	cd .. && \
 	rm -rf neovim
 
-
-# Add entrypoint script
-ADD entrypoint.sh /home/user/init
-RUN dos2unix /home/user/init
-
-# Adjust directory permissions
-RUN mkdir /workspaces/
-RUN chown user:user /workspaces/
-RUN chown -R user:user /home/user/
-
 # Switch to 'user' context
 USER user
 
@@ -178,6 +101,8 @@ ENV CMAKE_PREFIX_PATH=/opt/toolchains
 ENV RUSTUP_HOME=/opt/rust
 ENV CARGO_HOME=/opt/rust
 ENV PATH=$PATH:/opt/rust/bin/
+
+ENV HOSTNAME=workstation
 
 # Set working directory
 WORKDIR /workspaces/

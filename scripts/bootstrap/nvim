@@ -29,7 +29,7 @@ sudo apt-get update && sudo apt install -qy \
 # Install neovim if version does not match
 NVIM_INSTALLED_VERSION=""
 which nvim && {
-	NVIM_INSTALLED_VERSION="v$(nvim --version | head -1 | egrep -o '[0-9]+\.[0-9]+.[0-9]+')"
+	NVIM_INSTALLED_VERSION="v$(nvim --version | head -1 | egrep -o '[0-9]+\.[0-9]+.[0-9]+' || echo "0.0.0")"
 }
 if [[ "$NVIM_VERSION" != "$NVIM_INSTALLED_VERSION" ]]; then
 	echo "Installing nvim version $NVIM_VERSION"
@@ -46,12 +46,11 @@ fi
 curl -fLo ~/.config/nvim/autoload/plug.vim --create-dirs \
 	https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
-nvim -e --headless '+PlugInstall --sync' +qa || true
-nvim -e --headless '+PlugInstall --sync' +qa
-nvim -e --headless '+TSInstall all'
-
 mkdir -p ~/.config/nvim/
 cp -R $ROOT/conf/nvim/* ~/.config/nvim/
+
+nvim --headless '+PlugInstall --sync' +qa
+nvim --headless '+TSInstall all' +qa
 
 # Download and install Terminess Nerd Font
 FONT_DIR=`mktemp -d -p "/tmp/"`

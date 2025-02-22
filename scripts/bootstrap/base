@@ -1,0 +1,35 @@
+#!/bin/bash
+
+sudo apt-get update && \
+sudo apt-get install -qy \
+	chromium-browser \
+	ssh \
+	curl \
+	obs-studio \
+	gitk \
+	gnome-tweaks \
+	libfuse2t64
+
+# Get user info from system settings if not already set
+EMAIL=$(git config --global user.email)
+NAME=$(git config --global user.name)
+
+if [ -z "$EMAIL" ]; then
+	echo -n "Enter your email for git: "
+	read EMAIL
+	if [ -n "$EMAIL" ]; then
+		echo "Setting git email to $EMAIL"
+		git config --global user.email "$EMAIL"
+	fi
+fi
+
+if [ -z "$NAME" ]; then
+	echo -n "Enter your name for git: "
+	read NAME
+	if [ -n "$NAME" ]; then
+		echo "Setting git name to $NAME"
+		git config --global user.name "$NAME"
+	fi
+fi
+
+git config pull.rebase true

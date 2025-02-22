@@ -1,11 +1,14 @@
 #!/bin/bash
 
+set -e
+
 CURDIR="$(dirname $BASH_SOURCE)"
 ROOT="$(realpath $(dirname $BASH_SOURCE)/../..)"
 
 $CURDIR/docker
 $CURDIR/gdb
 $CURDIR/i3
+$CURDIR/node
 $CURDIR/nvim
-$CURDIR/sdk
+$CURDIR/security
 $CURDIR/tmux

@@ -1,0 +1,96 @@
+<domain type='kvm'>
+  <name>ubuntu</name>
+  <memory unit='MiB'>8192</memory>
+  <currentMemory unit='MiB'>8192</currentMemory>
+  <vcpu placement='static'>4</vcpu>
+
+  <os>
+    <type arch='x86_64' machine='q35'>hvm</type>
+  </os>
+
+  <features>
+    <acpi/>
+    <apic/>
+    <vmport state='off'/>
+  </features>
+
+  <cpu mode='host-passthrough'>
+    <feature policy='require' name='vmx'/>
+  </cpu>
+
+  <clock offset='utc'>
+    <timer name='rtc' tickpolicy='catchup'/>
+    <timer name='pit' tickpolicy='delay'/>
+    <timer name='hpet' present='no'/>
+  </clock>
+
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>restart</on_crash>
+
+  <pm>
+    <suspend-to-mem enabled='yes'/>
+    <suspend-to-disk enabled='yes'/>
+  </pm>
+
+  <devices>
+    <!-- Main Storage Disk -->
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2' cache='none' io='native' discard='unmap'/>
+      <source file='/var/lib/libvirt/images/ubuntu.qcow2'/>
+      <target dev='vda' bus='virtio'/>
+      <boot order='1'/>
+    </disk>
+
+    <!-- CD-ROM for installation -->
+    <disk type='file' device='cdrom'>
+      <driver name='qemu' type='raw'/>
+      <source file='/var/lib/libvirt/images/ubuntu.iso'/>
+      <target dev='sda' bus='sata'/>
+      <readonly/>
+      <boot order='2'/>
+    </disk>
+
+    <!-- Secure Boot & TPM -->
+    <tpm model='tpm-tis'>
+      <backend type='emulator' version='2.0'/>
+    </tpm>
+
+    <!-- Network with NAT and Bridge -->
+    <interface type='network'>
+      <mac address='52:54:00:12:34:56'/>
+      <source network='ubuntu-nat'/>
+      <model type='virtio'/>
+    </interface>
+
+    <interface type='bridge'>
+      <mac address='52:54:00:65:43:21'/>
+      <source bridge='br0'/>
+      <model type='virtio'/>
+    </interface>
+
+    <!-- Input Devices -->
+    <input type='tablet' bus='usb'/>
+    <input type='mouse' bus='ps2'/>
+    <input type='keyboard' bus='ps2'/>
+
+    <!-- Graphics -->
+    <graphics type='spice' listen='none' autoport='yes'>
+      <listen type='none'/>
+      <image compression='off'/>
+    </graphics>
+
+    <video>
+      <model type='virtio' heads='1'/>
+    </video>
+
+    <!-- Audio -->
+    <sound model='ich9'/>
+
+    <!-- RNG for Better Security -->
+    <rng model='virtio'>
+      <backend model='random'>/dev/urandom</backend>
+    </rng>
+  </devices>
+
+</domain>

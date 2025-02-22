@@ -3,12 +3,6 @@
 # Exit on any error
 set -e
 
-# Check if script is run as root
-if [ "$EUID" -ne 0 ]; then 
-    echo "Please run as root"
-    exit 1
-fi
-
 # Function to check if we're on a Debian-based system
 is_debian() {
     [ -f /etc/debian_version ]
@@ -18,62 +12,62 @@ echo "Starting security hardening script..."
 
 # Update and upgrade system
 echo "Updating and upgrading system..."
-apt update
-apt upgrade -y
+sudo apt update
+sudo apt upgrade -y
 
-apt install -y ssh
+sudo apt install -y ssh
 
 # Install and configure UFW
 if is_debian; then
     echo "Installing and configuring UFW..."
-    apt install -y ufw
-    ufw allow 22/tcp
-    ufw default deny incoming
-    ufw --force enable
+    sudo apt install -y ufw
+    sudo ufw allow 22/tcp
+    sudo ufw default deny incoming
+    sudo ufw --force enable
 fi
 
 # Install and configure auditd
 echo "Installing and configuring auditd..."
-apt install -y auditd
-systemctl enable auditd
-systemctl start auditd
+sudo apt install -y auditd
+sudo systemctl enable auditd
+sudo systemctl start auditd
 
 # Configure audit rules
-cat > /etc/audit/rules.d/audit.rules << 'EOF'
+sudo tee /etc/audit/rules.d/audit.rules << 'EOF'
 -w /etc/passwd -p wa -k passwd_changes
 -w /var/log/auth.log -p wa -k auth_logs
 -w /etc/sudoers -p wa -k sudo_changes
 EOF
 
-systemctl restart auditd
+sudo systemctl restart auditd
 
 # Configure SSH security
 echo "Configuring SSH security..."
-sed -i 's/^PermitRootLogin.*$/PermitRootLogin no/' /etc/ssh/sshd_config
-sed -i 's/^PasswordAuthentication.*$/PasswordAuthentication no/' /etc/ssh/sshd_config
-systemctl restart ssh
+sudo sed -i 's/^PermitRootLogin.*$/PermitRootLogin no/' /etc/ssh/sshd_config
+sudo sed -i 's/^PasswordAuthentication.*$/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo systemctl restart ssh
 
 # Install and configure Suricata IDS
 echo "Installing Suricata IDS..."
-#apt install -y suricata
-#systemctl enable suricata
-#systemctl start suricata
+#sudo apt install -y suricata
+#sudo systemctl enable suricata
+#sudo systemctl start suricata
 
 # Install and configure AIDE
 echo "Installing and configuring AIDE..."
-apt install -y aide
-aideinit || true  # Initialize AIDE database, ignore if already initialized
+sudo apt install -y aide
+sudo aideinit || true  # Initialize AIDE database, ignore if already initialized
 
 # Install and configure AppArmor
 echo "Installing and configuring AppArmor..."
-apt install -y apparmor
-systemctl enable apparmor
-systemctl start apparmor
+sudo apt install -y apparmor
+sudo systemctl enable apparmor
+sudo systemctl start apparmor
 
 # Configure AppArmor profiles (if Firefox profile exists)
 if [ -f /etc/apparmor.d/usr.bin.firefox ]; then
-    aa-enforce /etc/apparmor.d/usr.bin.firefox || true
-    aa-enforce /etc/apparmor.d/usr.bin.chromium-browser || true
+    sudo aa-enforce /etc/apparmor.d/usr.bin.firefox || true
+    sudo aa-enforce /etc/apparmor.d/usr.bin.chromium-browser || true
 fi
 
 echo "Security hardening completed!"

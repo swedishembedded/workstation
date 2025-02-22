@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Download Cursor from cursor.com
+curl -L "https://download.todesktop.com/230313mzl4w4u92/cursor-0.45.11-build-250207y6nbaw5qc-x86_64.AppImage" -o cursor
+
+# Move downloaded file to /usr/local/bin/cursor-bin and make executable
+sudo mv cursor /usr/local/bin/cursor-bin
+sudo chmod +x /usr/local/bin/cursor-bin
+
+# Create wrapper script to always run with --no-sandbox
+cat << 'EOF' | sudo tee /usr/local/bin/cursor
+#!/bin/bash
+/usr/local/bin/cursor-bin --no-sandbox "$@"
+EOF
+
+sudo chmod +x /usr/local/bin/cursor

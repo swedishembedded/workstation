@@ -1,0 +1,23 @@
+FROM swedishembedded/dev:latest
+
+# Install rustup
+ENV RUSTUP_HOME=/opt/rust
+ENV CARGO_HOME=/opt/rust
+ENV PATH=$PATH:/opt/rust/bin
+
+USER root
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path
+
+# Install target support for Rust.  This is the list as of the current
+# time.
+RUN \
+	/opt/rust/bin/rustup target install riscv32i-unknown-none-elf && \
+	/opt/rust/bin/rustup target install riscv64imac-unknown-none-elf && \
+	/opt/rust/bin/rustup target install thumbv6m-none-eabi && \
+	/opt/rust/bin/rustup target install thumbv7em-none-eabi && \
+	/opt/rust/bin/rustup target install thumbv7m-none-eabi && \
+	/opt/rust/bin/rustup target install thumbv8m.main-none-eabi && \
+	/opt/rust/bin/rustup target install x86_64-unknown-none
+
+USER user

@@ -1,0 +1,108 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+
+ROOT="$(realpath $(dirname $BASH_SOURCE)/../..)"
+BUILD_DIR=`mktemp -d -p "/tmp/"`
+IMAGE_NAME="ubuntu-24.10-desktop-amd64.iso"
+IMAGE_URL="https://releases.ubuntu.com/24.10/${IMAGE_NAME}"
+
+# Download Ubuntu 24.10 desktop image if not already present
+if [ ! -f "$ROOT/images/${IMAGE_NAME}" ]; then
+    mkdir -p "$ROOT/images"
+    echo "Downloading Ubuntu 24.10 desktop image..."
+    curl -L "${IMAGE_URL}" -o "$ROOT/images/${IMAGE_NAME}"
+    echo "Download complete"
+else
+    echo "Ubuntu 24.10 image already exists at $ROOT/images/${IMAGE_NAME}"
+fi
+
+# Install KVM and virtualization tools
+sudo apt-get update && sudo apt install -qy \
+    qemu-kvm \
+    libvirt-daemon-system \
+    libvirt-clients \
+    bridge-utils \
+    virt-manager \
+    virtinst
+
+# Add current user to libvirt group to allow VM management without sudo
+sudo usermod -aG libvirt $USER
+sudo usermod -aG kvm $USER
+
+# Start and enable libvirtd service
+sudo systemctl enable --now libvirtd
+
+# Verify KVM installation
+kvm_ok=$(kvm-ok 2>&1 | grep "KVM acceleration can be used" || echo "")
+if [ -z "$kvm_ok" ]; then
+    echo "WARNING: KVM acceleration may not be available. Please check CPU virtualization settings in BIOS"
+else
+    echo "KVM acceleration is available"
+fi
+
+# Copy Ubuntu ISO to libvirt images directory
+sudo cp "$ROOT/images/${IMAGE_NAME}" /var/lib/libvirt/images/ubuntu.iso
+echo "Copied Ubuntu ISO to /var/lib/libvirt/images/"
+
+if [ ! -f /var/lib/libvirt/images/ubuntu.qcow2 ]; then
+	sudo qemu-img create -f qcow2 \
+		/var/lib/libvirt/images/ubuntu.qcow2 100G
+fi
+# Copy network configuration
+sudo cp "$ROOT/conf/virsh/network.xml" /etc/libvirt/qemu/networks/
+
+# Check if network exists and set it up if needed
+if ! sudo virsh net-list --all | grep -q "ubuntu-nat"; then
+    echo "Defining and starting default network..."
+    sudo virsh net-define /etc/libvirt/qemu/networks/network.xml
+    sudo virsh net-autostart ubuntu-nat
+    sudo virsh net-start ubuntu-nat
+else
+    echo "Ubuntu network already exists"
+fi
+
+# Copy VM configuration
+sudo cp "$ROOT/conf/virsh/ubuntu.xml" /etc/libvirt/qemu/
+
+# Check if VM exists and set it up if needed
+if ! sudo virsh list --all | grep -q "ubuntu"; then
+    echo "Defining Ubuntu VM..."
+    sudo virsh define /etc/libvirt/qemu/ubuntu.xml
+    sudo virsh start ubuntu
+else
+    echo "Ubuntu VM already exists"
+fi
+
+# Ensure VM is configured to boot from CD-ROM first
+sudo virsh dumpxml ubuntu > /tmp/ubuntu_temp.xml
+sudo sed -i '/<boot order/d' /tmp/ubuntu_temp.xml
+sudo sed -i '/<target dev='\''sda'\'' bus='\''sata'\''\/>/ a\      <boot order='\''1'\''/>' /tmp/ubuntu_temp.xml
+sudo sed -i '/<target dev='\''vda'\'' bus='\''virtio'\''\/>/ a\      <boot order='\''2'\''/>' /tmp/ubuntu_temp.xml
+sudo virsh define /tmp/ubuntu_temp.xml
+rm /tmp/ubuntu_temp.xml
+
+# Start the VM if not already running
+if ! sudo virsh list | grep -q "ubuntu"; then
+    echo "Starting Ubuntu VM..."
+    sudo virsh start ubuntu
+fi
+
+# Connect to VM display using virt-viewer
+echo "Launching virt-viewer to connect to VM..."
+virt-viewer --wait ubuntu &
+
+# Reconfigure boot order to prioritize hard disk
+echo "Configuring VM to boot from hard disk first..."
+sudo virsh dumpxml ubuntu > /tmp/ubuntu_temp.xml
+sudo sed -i '/<boot order/d' /tmp/ubuntu_temp.xml
+sudo sed -i '/<target dev='\''vda'\'' bus='\''virtio'\''\/>/ a\      <boot order='\''1'\''/>' /tmp/ubuntu_temp.xml
+sudo sed -i '/<target dev='\''sda'\'' bus='\''sata'\''\/>/ a\      <boot order='\''2'\''/>' /tmp/ubuntu_temp.xml
+sudo virsh define /tmp/ubuntu_temp.xml
+rm /tmp/ubuntu_temp.xml
+
+#sudo /usr/bin/qemu-system-x86_64 -enable-kvm -m 4096 -cpu host -smp 4 \
+#  -drive file=/var/lib/libvirt/images/ubuntu-secure.qcow2,if=virtio \
+#  -display sdl,gl=on -full-screen \
+#  -device qxl-vga

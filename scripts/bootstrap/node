@@ -1,6 +1,8 @@
 #!/bin/bash
 
+set -e
+
 NODE_VERSION=22
 
-curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x  | bash - 
-apt-get -qy install nodejs
+curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x  | sudo bash - 
+sudo apt-get -qy install nodejs

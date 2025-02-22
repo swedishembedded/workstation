@@ -16,9 +16,14 @@
     },
     "remoteUser": "user",
     "runArgs": [
-        "--privileged"
+        "--privileged",
+        "-e DISPLAY",
+        "--network=host"
     ],
     "mounts": [
-        "source=/dev,target=/dev,type=bind"
+        "source=/dev,target=/dev,type=bind",
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+        "type=bind,source=/home/${env:USER}/.ssh,target=/root/.ssh",
+        "type=bind,source=/tmp/.X11-unix,target=/tmp/.X11-unix"
     ]
 }

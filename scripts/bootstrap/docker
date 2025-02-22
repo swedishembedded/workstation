@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 ROOT="$(realpath $(dirname $BASH_SOURCE)/../..)"
 
 # Create Docker apt keyring directory

@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Exit on any error
+set -e
+
+# Remove root check and replace commands with sudo
+VM_NAME=ubuntu
+VM_PATH="/var/lib/libvirt/images/ubuntu.qcow2"
+
+# Check if VM image exists
+if [ ! -f "$VM_PATH" ]; then
+    echo "Error: VM image not found at $VM_PATH"
+    exit 1
+fi
+
+# Check if username is valid
+if [ -z "$USERNAME" ]; then
+    echo "Error: USERNAME environment variable not set"
+    exit 1
+fi
+
+if ! id "$USERNAME" >/dev/null 2>&1; then
+    echo "Error: User $USERNAME does not exist"
+    exit 1
+fi
+
+# Set up auto-connect to VM console
+PROFILE_FILE="/home/$USERNAME/.bash_profile"
+touch "$PROFILE_FILE"
+sudo chown "$USERNAME:$USERNAME" "$PROFILE_FILE"
+
+# Set up autologin for TTY1
+sudo mkdir -p /etc/systemd/system/getty@tty1.service.d/
+sudo bash -c "cat > /etc/systemd/system/getty@tty1.service.d/override.conf << EOF
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin $USERNAME --noclear %I \$TERM
+EOF"
+
+# Enable graphical target but don't make it default
+sudo systemctl set-default multi-user.target
+
+echo "Setup complete! System will now:"
+echo "- Boot in text mode"
+echo "- Automatically start VM with QEMU"
+echo "- Auto-login user: $USERNAME"
+echo "- Launch VM in full-screen mode on TTY1"
+echo ""
+echo "Reboot system to apply changes? (y/N)"
+read -r response
+if [[ "$response" =~ ^[Yy]$ ]]; then
+    sudo reboot
+fi
