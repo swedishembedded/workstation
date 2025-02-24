@@ -3,9 +3,8 @@
 ROOT="$(realpath $(dirname $BASH_SOURCE)/../..)"
 
 sudo apt-get update && sudo apt-get install -qy \
+	python3-pygments \
 	gdb-multiarch
-
-pip3 install pygments
 
 # gdb setup
 cp -R $ROOT/conf/pygdbinit ~/.pygdbinit

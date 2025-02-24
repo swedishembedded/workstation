@@ -66,11 +66,10 @@ RUN userdel ubuntu || true && \
     echo 'user ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/user && \
     chmod 0440 /etc/sudoers.d/user
 
-# Create a Python virtual environment
-RUN python3 -m venv /home/user/.venv && chown -R user:user /home/user/.venv
-
 USER user
 
+# Create a Python virtual environment
+RUN python3 -m venv /home/user/.venv
 ENV VIRTUAL_ENV=/home/user/.venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 

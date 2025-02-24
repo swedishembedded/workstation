@@ -1,3 +1,3 @@
-FROM swedishembedded/dev:latest
+FROM swedishembedded/workstation:latest
 
 ENV DISPLAY=:1

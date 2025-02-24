@@ -7,7 +7,12 @@ sudo apt-get install -qy \
 	curl \
 	obs-studio \
 	gitk \
+	btop \
 	gnome-tweaks \
+	flameshot \
+	gnome-keyring \
+	python3-build \
+	python3-venv \
 	libfuse2t64
 
 # Set locale settings for English language with Swedish time format
@@ -41,4 +46,4 @@ if [ -z "$NAME" ]; then
 	fi
 fi
 
-git config pull.rebase true
+git config pull.merge true

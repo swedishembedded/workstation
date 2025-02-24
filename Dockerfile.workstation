@@ -7,18 +7,16 @@ ARG NEOVIM_VERSION=v0.10.0
 ARG NODE_VERSION=22
 
 SHELL ["bash", "-c"]
-USER root
-RUN mkdir -p /build/platform && \
-	chown -R user:user /build
+USER user
 
 # Install ruby packages
-RUN gem install \
+RUN sudo gem install \
 	tmuxinator \
 	neovim
 
 # Install additional npm packages
-RUN npm install -g nmp
-RUN npm install -g \
+RUN sudo npm install -g nmp
+RUN sudo npm install -g \
 	bash-language-server \
 	pyright \
 	tailwindcss-language-server \
@@ -40,45 +38,40 @@ RUN pip3 install \
 	pip3 install --upgrade git+https://github.com/antmicro/renode-run.git && \
 	pip3 cache purge
 
-# Build emacs
-RUN wget -q https://ftpmirror.gnu.org/emacs/emacs-${EMACS_VERSION}.tar.gz https://ftpmirror.gnu.org/emacs/emacs-${EMACS_VERSION}.tar.gz.sig && \
-	tar zxf emacs-${EMACS_VERSION}.tar.gz && \
-	cd emacs-${EMACS_VERSION} && \
-	./configure \
-	--with-x-toolkit=no \
-	--with-xpm=ifavailable \
-	--with-jpeg=ifavailable \
-	--with-gif=ifavailable \
-	--with-tiff=ifavailable \
-	&& \
-	make && \
-	make install && \
-	cd .. && \
-	rm -rf emacs-*
-
-USER root
-
 # Install neovim
 RUN git clone https://github.com/neovim/neovim.git && \
 	cd neovim && \
 	git checkout $NEOVIM_VERSION && \
 	make CMAKE_BUILD_TYPE=RelWithDebInfo && \
-	make install && \
+	sudo make install && \
 	cd .. && \
 	rm -rf neovim
 
-# Switch to 'user' context
-USER user
+# Build emacs
+# RUN wget -q https://ftpmirror.gnu.org/emacs/emacs-${EMACS_VERSION}.tar.gz https://ftpmirror.gnu.org/emacs/emacs-${EMACS_VERSION}.tar.gz.sig && \
+# 	tar zxf emacs-${EMACS_VERSION}.tar.gz && \
+# 	cd emacs-${EMACS_VERSION} && \
+# 	./configure \
+# 	--with-x-toolkit=no \
+# 	--with-xpm=ifavailable \
+# 	--with-jpeg=ifavailable \
+# 	--with-gif=ifavailable \
+# 	--with-tiff=ifavailable \
+# 	&& \
+# 	make && \
+# 	make install && \
+# 	cd .. && \
+#	rm -rf emacs-*
 
 # Install DooM emacs as user
-RUN git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.config/emacs && \
-	~/.config/emacs/bin/doom env && \
-	~/.config/emacs/bin/doom install
+#RUN git clone --depth 1 https://github.com/doomemacs/doomemacs ~/.config/emacs && \
+#	~/.config/emacs/bin/doom env && \
+#	~/.config/emacs/bin/doom install
 
 # Add configuration as user
-COPY --chown=user:user conf/doom /home/user/.config/emacs/
-RUN ~/.config/emacs/bin/doom env && \
-	~/.config/emacs/bin/doom upgrade
+#COPY --chown=user:user conf/doom /home/user/.config/emacs/
+#RUN ~/.config/emacs/bin/doom env && \
+#	~/.config/emacs/bin/doom upgrade
 
 COPY --chown=user:user conf/.tmux.conf /home/user/.tmux.conf
 COPY --chown=user:user conf/.tmux.conf.local /home/user/.tmux.conf.local
