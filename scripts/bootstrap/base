@@ -13,7 +13,10 @@ sudo apt-get install -qy \
 	gnome-keyring \
 	python3-build \
 	python3-venv \
-	libfuse2t64
+	libfuse2t64 \
+	lsof \
+	net-tools \
+	dnsutils
 
 # Set locale settings for English language with Swedish time format
 # Set locale in /etc/default/locale directly

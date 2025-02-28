@@ -1,0 +1,32 @@
+#!/bin/bash
+
+echo "Checking for rootkits"
+sudo chkrootkit
+
+echo "Running lynis audit"
+sudo lynis audit system
+
+echo "Checking apparmor"
+sudo dmesg | grep "apparmor"
+journalctl -k | grep "apparmor"
+
+echo "Checking audit logs"
+sudo ausearch -k audit_sbin
+sudo ausearch -k audit_usrsbin
+sudo ausearch -k audit_passwd
+sudo ausearch -k audit_shadow
+
+echo "Keylogger logs:"
+sudo ausearch -k keylogger-watch --format text
+
+echo "Network activity logs:"
+sudo ausearch -k network-activity --format text | \
+	grep -v "/usr/sbin/ausearch" | \
+	grep -v "/usr/bin/ls" | \
+	grep -v "/usr/bin/sudo" | \
+	grep -v "connected-to local" | \
+	grep -v "chromium-browser/chrome" | \
+	grep -v "vscode" | \
+	grep -v "code/code" | \
+	grep -v "NetworkManager"
+

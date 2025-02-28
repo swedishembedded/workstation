@@ -69,7 +69,7 @@ RUN userdel ubuntu || true && \
 USER user
 
 # Create a Python virtual environment
-RUN python3 -m venv /home/user/.venv
+RUN python3 -m venv /home/user/.venv && chown -R user:user /home/user/.venv
 ENV VIRTUAL_ENV=/home/user/.venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 

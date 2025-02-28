@@ -28,15 +28,32 @@ fi
 
 # Install and configure auditd
 echo "Installing and configuring auditd..."
-sudo apt install -y auditd
+sudo apt install -y auditd audispd-plugins
 sudo systemctl enable auditd
 sudo systemctl start auditd
 
+# Monitor password files
+sudo auditctl -w /sbin -p wa -k audit_sbin
+sudo auditctl -w /usr/sbin -p wa -k audit_usrsbin
+sudo auditctl -w /etc/passwd -p wa -k audit_passwd
+sudo auditctl -w /etc/shadow -p wa -k audit_shadow
+sudo auditctl -w /dev/input -p rwxa -k keylogger-watch
+sudo auditctl -a exit,always -F arch=b64 -S connect \
+	-F key=network-activity
+sudo auditctl -a always,exit -F arch=b64 -S execve -F key=process_exec
+sudo auditctl -w / -p wa -k file_monitor
+
 # Configure audit rules
 sudo tee /etc/audit/rules.d/audit.rules << 'EOF'
--w /etc/passwd -p wa -k passwd_changes
--w /var/log/auth.log -p wa -k auth_logs
+-w /sbin -p wa -k audit_sbin
+-w /usr/sbin -p wa -k audit_usrsbin
+-w /etc/passwd -p wa -k audit_passwd
 -w /etc/sudoers -p wa -k sudo_changes
+-w /etc/shadow -p wa -k audit_shadow
+-w /dev/input -p rwxa -k keylogger-watch
+-w / -p wa -k file_monitor
+-a exit,always -F arch=b64 -S connect -F key=network-activity
+-a always,exit -F arch=b64 -S execve -F key=process_exec
 EOF
 
 sudo systemctl restart auditd
@@ -60,14 +77,25 @@ sudo aideinit || true  # Initialize AIDE database, ignore if already initialized
 
 # Install and configure AppArmor
 echo "Installing and configuring AppArmor..."
-sudo apt install -y apparmor
+sudo apt install -y apparmor apparmor-utils
 sudo systemctl enable apparmor
 sudo systemctl start apparmor
+
+sudo apparmor_parser -r /etc/apparmor.d/*
+sudo aa-enforce /etc/apparmor.d/*
 
 # Configure AppArmor profiles (if Firefox profile exists)
 if [ -f /etc/apparmor.d/usr.bin.firefox ]; then
     sudo aa-enforce /etc/apparmor.d/usr.bin.firefox || true
     sudo aa-enforce /etc/apparmor.d/usr.bin.chromium-browser || true
 fi
+
+sudo apt-get install -qy rkhunter
+
+sudo apt-get install -qy lynis
+
+# Disable keylogging packages
+echo "logkeys hold" | sudo dpkg --set-selections
+echo "lkl hold" | sudo dpkg --set-selections
 
 echo "Security hardening completed!"
