@@ -21,3 +21,6 @@ RUN \
 	/opt/rust/bin/rustup target install x86_64-unknown-none
 
 USER user
+
+# Ensure Python virtual environment has proper ownership
+RUN sudo chown -R user:user $VIRTUAL_ENV

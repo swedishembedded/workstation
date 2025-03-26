@@ -192,7 +192,8 @@ RUN pip3 install --upgrade pip && \
 	pip3 install \
 		black \
         pre-commit \
-		west
+		west && \
+    sudo chown -R user:user $VIRTUAL_ENV
 
 COPY --chown=user:user conf/.bashrc /home/user/.bashrc
 

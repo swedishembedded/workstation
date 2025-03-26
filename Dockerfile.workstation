@@ -36,7 +36,8 @@ RUN pip3 install \
 	pynvim && \
 	echo "Installing renode-run" && \
 	pip3 install --upgrade git+https://github.com/antmicro/renode-run.git && \
-	pip3 cache purge
+	pip3 cache purge && \
+	sudo chown -R user:user $VIRTUAL_ENV
 
 # Install neovim
 RUN git clone https://github.com/neovim/neovim.git && \

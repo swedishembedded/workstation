@@ -149,7 +149,8 @@ COPY requirements-doc.txt /tmp/
 COPY requirements-ci.txt /tmp/
 RUN pip3 install -r /tmp/requirements.txt && \
 	rm /tmp/requirements*.txt && \
-	pip3 cache purge
+	pip3 cache purge && \
+	chown -R user:user $VIRTUAL_ENV
 
 RUN gem install \
 	asciidoctor-pdf \
@@ -188,6 +189,9 @@ RUN sudo -E -- bash -c ' \
 	/opt/toolchains/zephyr-sdk-${ZSDK_VERSION}/setup.sh -c && \
 	chown -R user:user /home/user/.cmake \
 	'
+
+# Ensure Python virtual environment has proper ownership
+RUN sudo chown -R user:user $VIRTUAL_ENV
 
 ENV HOSTNAME=zephyr
 

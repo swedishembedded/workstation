@@ -68,16 +68,19 @@ RUN userdel ubuntu || true && \
 
 USER user
 
-# Create a Python virtual environment
-RUN python3 -m venv /home/user/.venv && chown -R user:user /home/user/.venv
 ENV VIRTUAL_ENV=/home/user/.venv
+
+# Create a Python virtual environment
+RUN python3 -m venv $VIRTUAL_ENV && \
+    chown -R user:user $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Upgrade pip and install essential Python utilities
 RUN python3 -m pip install -U --no-cache-dir pip && \
     pip3 install -U --no-cache-dir wheel setuptools && \
     pip3 check && \
-    pip3 cache purge
+    pip3 cache purge && \
+    chown -R user:user $VIRTUAL_ENV
 
 WORKDIR /home/user
 
