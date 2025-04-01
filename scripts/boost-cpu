@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Script to set all CPUs to run at their maximum frequency
+# This script requires root privileges to modify CPU frequency settings
+
+# Check if running as root
+if [ "$(id -u)" -ne 0 ]; then
+   echo "This script must be run as root" 
+   exit 1
+fi
+
+# Check if CPU frequency scaling is available
+if [ ! -d "/sys/devices/system/cpu/cpu0/cpufreq" ]; then
+    echo "CPU frequency scaling not available on this system"
+    exit 1
+fi
+
+# Get number of CPUs
+NUM_CPUS=$(nproc)
+echo "Setting $NUM_CPUS CPUs to their maximum frequency"
+
+# Set governor to performance and maximum frequency for each CPU
+for ((cpu=0; cpu<NUM_CPUS; cpu++)); do
+    CPU_DIR="/sys/devices/system/cpu/cpu$cpu/cpufreq"
+    
+    # Check if this CPU exists and has frequency scaling
+    if [ ! -d "$CPU_DIR" ]; then
+        echo "CPU$cpu does not have frequency scaling, skipping"
+        continue
+    fi
+    
+    # Get max frequency
+    MAX_FREQ=$(cat "$CPU_DIR/cpuinfo_max_freq")
+    
+    # Set the CPU governor to performance
+    echo "performance" > "$CPU_DIR/scaling_governor"
+    
+    # Set the minimum and maximum scaling frequencies to maximum
+    # This effectively locks the CPU at its maximum frequency
+    echo "$MAX_FREQ" > "$CPU_DIR/scaling_min_freq"
+    echo "$MAX_FREQ" > "$CPU_DIR/scaling_max_freq"
+    
+    # Report the settings for this CPU
+    CURRENT_GOV=$(cat "$CPU_DIR/scaling_governor")
+    CURRENT_FREQ=$(cat "$CPU_DIR/scaling_cur_freq")
+    MAX_FREQ_GHZ=$(echo "scale=2; $MAX_FREQ/1000000" | bc)
+    echo "CPU$cpu: Governor set to $CURRENT_GOV, frequency set to $CURRENT_FREQ kHz (max: $MAX_FREQ_GHZ GHz)"
+done
+
+echo "All CPUs have been set to run at their maximum frequency"
+echo "Note: These settings will revert after system reboot"
+echo "To make these changes permanent, consider adding this script to system startup" 

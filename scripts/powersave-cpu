@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# Script to set all CPUs to run in powersave mode with dynamic scaling
+# This script requires root privileges to modify CPU frequency settings
+
+# Check if running as root
+if [ "$(id -u)" -ne 0 ]; then
+   echo "This script must be run as root" 
+   exit 1
+fi
+
+# Check if CPU frequency scaling is available
+if [ ! -d "/sys/devices/system/cpu/cpu0/cpufreq" ]; then
+    echo "CPU frequency scaling not available on this system"
+    exit 1
+fi
+
+# Get number of CPUs
+NUM_CPUS=$(nproc)
+echo "Setting $NUM_CPUS CPUs to powersave mode with dynamic scaling"
+
+# Set governor to powersave for each CPU
+for ((cpu=0; cpu<NUM_CPUS; cpu++)); do
+    CPU_DIR="/sys/devices/system/cpu/cpu$cpu/cpufreq"
+    
+    # Check if this CPU exists and has frequency scaling
+    if [ ! -d "$CPU_DIR" ]; then
+        echo "CPU$cpu does not have frequency scaling, skipping"
+        continue
+    fi
+    
+    # Get min and max frequencies
+    MIN_FREQ=$(cat "$CPU_DIR/cpuinfo_min_freq")
+    MAX_FREQ=$(cat "$CPU_DIR/cpuinfo_max_freq")
+    
+    # Set the CPU governor to powersave
+    echo "powersave" > "$CPU_DIR/scaling_governor"
+    
+    # Reset scaling_min_freq and scaling_max_freq to their defaults
+    # This allows the CPU to scale up when needed and down when idle
+    echo "$MIN_FREQ" > "$CPU_DIR/scaling_min_freq"
+    echo "$MAX_FREQ" > "$CPU_DIR/scaling_max_freq"
+    
+    # Report the settings for this CPU
+    CURRENT_GOV=$(cat "$CPU_DIR/scaling_governor")
+    CURRENT_FREQ=$(cat "$CPU_DIR/scaling_cur_freq")
+    MIN_FREQ_GHZ=$(echo "scale=2; $MIN_FREQ/1000000" | bc)
+    MAX_FREQ_GHZ=$(echo "scale=2; $MAX_FREQ/1000000" | bc)
+    CURRENT_FREQ_GHZ=$(echo "scale=2; $CURRENT_FREQ/1000000" | bc)
+    
+    echo "CPU$cpu: Governor set to $CURRENT_GOV, frequency range $MIN_FREQ_GHZ-$MAX_FREQ_GHZ GHz (current: $CURRENT_FREQ_GHZ GHz)"
+done
+
+echo "All CPUs have been set to powersave mode with dynamic scaling"
+echo "The system will now prefer lower frequencies but scale up when needed"
+echo "Note: These settings will revert after system reboot"
+echo "To make these changes permanent, consider adding this script to system startup" 
