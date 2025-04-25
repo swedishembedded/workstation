@@ -75,6 +75,7 @@ RUN apt-get -y update && \
         help2man \
 		host \
         iproute2 \
+        jq \
         lcov \
         libboost-date-time-dev \
         libboost-dev \
@@ -118,6 +119,7 @@ RUN apt-get -y update && \
         unzip \
         valgrind \
         xz-utils \
+        shellcheck \
         && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/*
@@ -192,6 +194,7 @@ RUN pip3 install --upgrade pip && \
 	pip3 install \
 		black \
         pre-commit \
+        yq \
 		west && \
     sudo chown -R user:user $VIRTUAL_ENV
 

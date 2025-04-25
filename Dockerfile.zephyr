@@ -63,6 +63,9 @@ RUN apt-get update && \
 	texlive-fonts-recommended \
 	texlive-latex-base \
 	texlive-latex-extra \
+	texlive-xetex \
+	texlive-fonts-recommended \
+	texlive-fonts-extra \
 	&& \
 	echo "Installing dependencies for asciidoc pdf generation" && \
 	apt-get -qy install --no-install-recommends \
