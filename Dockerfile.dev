@@ -108,6 +108,7 @@ RUN apt-get -y update && \
         ovmf \
         parallel \
         pkg-config \
+        plocate \
         python3-ply \
         qemu-system \
         rsync \

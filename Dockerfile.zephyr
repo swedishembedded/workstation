@@ -3,7 +3,7 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE:-swedishembedded/rust:latest}
 
-ARG ZSDK_VERSION=0.16.3
+ARG ZSDK_VERSION=0.16.8
 ARG DOXYGEN_VERSION=1.9.4
 ARG RENODE_VERSION=1.15.3
 ARG BSIM_VERSION=v2.1
@@ -182,6 +182,38 @@ RUN wget https://github.com/ledger/ledger/archive/refs/tags/v${LEDGER_VERSION}.t
 # OSS CAD Suite (full suite for building verilog stuff)
 RUN wget ${WGET_ARGS} https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2024-02-11/oss-cad-suite-linux-x64-${OSS_CAD_SUITE_VERSION}.tgz && \
 	tar xf oss-cad-suite-linux-x64-${OSS_CAD_SUITE_VERSION}.tgz -C /opt
+
+# Install nrf flashing tools and their dependencies
+RUN apt-get update -qy \
+	&& apt-get install -qy \
+	curl \
+	jq \
+	libusb-1.0-0-dev \
+	libxcb-render-util0 \
+	libxcb-shape0 \
+	libxcb-randr0 \
+	libxcb-xfixes0 \
+	libxcb-sync1 \
+	libxcb-icccm4 \
+	libxcb-keysyms1 \
+	libxcb-image0 \
+	libxkbcommon0 \
+	libxkbcommon-x11-0 \
+	libx11-xcb1 \
+	libcoap3-bin
+RUN wget --no-verbose -P /tmp/ https://nsscprodmedia.blob.core.windows.net/\
+prod/software-and-other-downloads/desktop-software/nrf-command-line-tools/\
+sw/versions-10-x-x/10-23-4/nrf-command-line-tools_10.23.4_amd64.deb
+
+RUN usermod -aG dialout user
+RUN usermod -aG plugdev user
+
+RUN dpkg -i /tmp/nrf-command-line-tools_10.23.4_amd64.deb
+# This file is installed by the nrf tool
+RUN dpkg --unpack /opt/nrf-command-line-tools/share/JLink_Linux_V788j_x86_64.deb \
+    && rm -f /var/lib/dpkg/info/jlink.postinst \
+    && dpkg --configure jlink \
+    && apt install -yf
 
 # Run the Zephyr SDK setup script as 'user' in order to ensure that the
 # `Zephyr-sdk` CMake package is located in the package registry under the
