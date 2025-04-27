@@ -184,6 +184,15 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 COPY --chown=user:user conf/pygdbinit /home/user/.pygdbinit
 
+# Install stripe cli and webhook proxy
+RUN curl -s https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public | gpg --dearmor | tee /usr/share/keyrings/stripe.gpg > /dev/null && \
+	echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | tee -a /etc/apt/sources.list.d/stripe.list && \
+	apt-get update && \
+	apt-get install -qy stripe && \
+	apt-get clean -y && \
+	apt-get autoremove --purge -y && \
+	rm -rf /var/lib/apt/lists/*
+
 # Create the workspace directory
 RUN mkdir /workspaces/ && \
 	chown user:user /workspaces/
