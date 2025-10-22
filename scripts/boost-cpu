@@ -2,6 +2,7 @@
 
 # Script to set all CPUs to run at their maximum frequency
 # This script requires root privileges to modify CPU frequency settings
+# Supports both traditional cpufreq and Intel P-State drivers
 
 # Check if running as root
 if [ "$(id -u)" -ne 0 ]; then
@@ -9,15 +10,161 @@ if [ "$(id -u)" -ne 0 ]; then
    exit 1
 fi
 
+# Get number of CPUs
+NUM_CPUS=$(nproc)
+echo "Setting $NUM_CPUS CPUs to their maximum frequency"
+
+# Check if Intel P-State driver is active
+if [ -d "/sys/devices/system/cpu/intel_pstate" ]; then
+    PSTATE_STATUS=$(cat /sys/devices/system/cpu/intel_pstate/status 2>/dev/null)
+    if [ "$PSTATE_STATUS" = "active" ]; then
+        echo "Intel P-State driver detected and active"
+        
+        # Report current settings
+        MAX_PERF=$(cat /sys/devices/system/cpu/intel_pstate/max_perf_pct)
+        MIN_PERF=$(cat /sys/devices/system/cpu/intel_pstate/min_perf_pct)
+        NO_TURBO=$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)
+        
+        echo "Current Intel P-State settings:"
+        echo "  Max performance: ${MAX_PERF}%"
+        echo "  Min performance: ${MIN_PERF}%"
+        echo "  Turbo boost: $([ "$NO_TURBO" = "0" ] && echo "enabled" || echo "disabled")"
+        
+        # Try to set Intel P-State to maximum performance (may fail if read-only)
+        echo "Attempting to set Intel P-State to maximum performance..."
+        if echo "100" > /sys/devices/system/cpu/intel_pstate/max_perf_pct 2>/dev/null; then
+            echo "✓ Max performance set to 100%"
+        else
+            echo "⚠ Cannot modify max_perf_pct (read-only)"
+        fi
+        
+        if echo "100" > /sys/devices/system/cpu/intel_pstate/min_perf_pct 2>/dev/null; then
+            echo "✓ Min performance set to 100%"
+        else
+            echo "⚠ Cannot modify min_perf_pct (read-only)"
+        fi
+        
+        if echo "0" > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null; then
+            echo "✓ Turbo boost enabled"
+        else
+            echo "⚠ Cannot modify no_turbo (read-only)"
+        fi
+        
+        # Set cpufreq governor to performance and lock frequency for all CPUs
+        echo "Setting cpufreq governor to performance and locking frequency for all CPUs..."
+        SUCCESS_COUNT=0
+        for ((cpu=0; cpu<NUM_CPUS; cpu++)); do
+            CPU_DIR="/sys/devices/system/cpu/cpu$cpu/cpufreq"
+            if [ -d "$CPU_DIR" ]; then
+                # Get max frequency for this CPU
+                if [ -f "$CPU_DIR/cpuinfo_max_freq" ]; then
+                    MAX_FREQ=$(cat "$CPU_DIR/cpuinfo_max_freq")
+                    
+                    # Set governor to performance
+                    if [ -w "$CPU_DIR/scaling_governor" ]; then
+                        echo "performance" > "$CPU_DIR/scaling_governor" 2>/dev/null
+                    fi
+                    
+                    # Lock CPU to maximum frequency by setting min = max
+                    if [ -w "$CPU_DIR/scaling_min_freq" ]; then
+                        echo "$MAX_FREQ" > "$CPU_DIR/scaling_min_freq" 2>/dev/null
+                    fi
+                    
+                    if [ -w "$CPU_DIR/scaling_max_freq" ]; then
+                        echo "$MAX_FREQ" > "$CPU_DIR/scaling_max_freq" 2>/dev/null
+                    fi
+                    
+                    SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+                fi
+            fi
+        done
+        echo "✓ Configured $SUCCESS_COUNT CPUs to maximum frequency"
+        
+        # Set energy performance preference to performance if available
+        echo "Setting energy performance preference to performance..."
+        EPP_SUCCESS=0
+        for ((cpu=0; cpu<NUM_CPUS; cpu++)); do
+            CPU_DIR="/sys/devices/system/cpu/cpu$cpu/cpufreq"
+            if [ -f "$CPU_DIR/energy_performance_preference" ] && [ -w "$CPU_DIR/energy_performance_preference" ]; then
+                echo "performance" > "$CPU_DIR/energy_performance_preference" 2>/dev/null
+                if [ $? -eq 0 ]; then
+                    EPP_SUCCESS=$((EPP_SUCCESS + 1))
+                fi
+            fi
+        done
+        
+        if [ $EPP_SUCCESS -gt 0 ]; then
+            echo "✓ Set energy preference for $EPP_SUCCESS CPUs"
+        else
+            echo "⚠ Energy performance preference files are read-only"
+            echo "  Attempting to use x86_energy_perf_policy..."
+            
+            # Try using x86_energy_perf_policy if available
+            if command -v x86_energy_perf_policy &> /dev/null; then
+                # Try to load MSR module if not loaded
+                if [ ! -e /dev/cpu/0/msr ]; then
+                    modprobe msr 2>/dev/null
+                fi
+                
+                # Set energy performance policy
+                if x86_energy_perf_policy performance 2>/dev/null; then
+                    echo "✓ Energy performance policy set to performance via x86_energy_perf_policy"
+                else
+                    echo "⚠ x86_energy_perf_policy failed (MSR module may not be available)"
+                fi
+            fi
+        fi
+        
+        echo ""
+        echo "Intel P-State configuration complete."
+        echo ""
+        
+        # Display current status
+        CURRENT_FREQ=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq)
+        MAX_FREQ=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq)
+        MIN_FREQ=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq)
+        CURRENT_GHZ=$(echo "scale=2; $CURRENT_FREQ/1000000" | bc)
+        MAX_GHZ=$(echo "scale=2; $MAX_FREQ/1000000" | bc)
+        MIN_GHZ=$(echo "scale=2; $MIN_FREQ/1000000" | bc)
+        
+        echo "CPU Frequency Status:"
+        echo "  Current: ${CURRENT_GHZ} GHz"
+        echo "  Maximum: ${MAX_GHZ} GHz"
+        echo "  Minimum: ${MIN_GHZ} GHz"
+        echo ""
+        
+        if [ "$CURRENT_FREQ" -lt "$MAX_FREQ" ]; then
+            echo "⚠ CPU is not running at maximum frequency!"
+            echo ""
+            echo "Intel P-State with HWP scales frequency dynamically based on workload."
+            echo "The CPU will boost to ${MAX_GHZ} GHz under load but may idle at lower frequencies."
+            echo ""
+            echo "To force CPU to run at maximum frequency:"
+            echo "  1. Add kernel parameter: intel_pstate=disable intel_pstate=passive"
+            echo "     Edit /etc/default/grub and add to GRUB_CMDLINE_LINUX_DEFAULT"
+            echo "     Then run: sudo update-grub && sudo reboot"
+            echo ""
+            echo "  2. Keep CPU under load (temporary):"
+            echo "     yes > /dev/null &  # Run in background"
+            echo "     pkill yes          # Stop when done"
+            echo ""
+            echo "  3. Set BIOS power management to 'Maximum Performance' mode"
+        else
+            echo "✓ CPU is running at maximum frequency!"
+        fi
+        
+        exit 0
+    fi
+fi
+
+# Fallback to traditional cpufreq scaling
+echo "Using traditional cpufreq scaling"
+
 # Check if CPU frequency scaling is available
 if [ ! -d "/sys/devices/system/cpu/cpu0/cpufreq" ]; then
     echo "CPU frequency scaling not available on this system"
     exit 1
 fi
-
-# Get number of CPUs
-NUM_CPUS=$(nproc)
-echo "Setting $NUM_CPUS CPUs to their maximum frequency"
 
 # Set governor to performance and maximum frequency for each CPU
 for ((cpu=0; cpu<NUM_CPUS; cpu++)); do

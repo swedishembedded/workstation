@@ -182,7 +182,7 @@ call plug#begin()
 	" Plug '~/.config/nvim/mrtee'
 	" Plug 'dhruvasagar/vim-dotoo' " managing to-do lists.
 	" Plug 'hrsh7th/nvim-compe' " versatile auto-completion.
-	Plug 'github/copilot.vim' " AI-assisted coding.
+	" Plug 'github/copilot.vim' " AI-assisted coding.
 	Plug 'dhruvasagar/vim-table-mode'
 	Plug 'akinsho/bufferline.nvim', { 'tag': 'v4.9.0' } " plugin for tab line at the top
 	Plug 'catppuccin/nvim', { 'as': 'catppuccin' } " a beautiful color scheme

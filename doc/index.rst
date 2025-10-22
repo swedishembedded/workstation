@@ -24,67 +24,126 @@ Embedded Platform SDK.
 
     Windows WSL Development
 
-It is separated into four different docker images that build on each other.
+The project uses a **single consolidated multi-stage Dockerfile** that produces five different images:
 
-- **Developer Image**: this image contains a standalong development environment based on Doom Emacs
-  and tmux which can be used for development.
-- **Build Image**: to be used for running CI pipeline. This image contains all toolschains and
-  build tools in addition to the Zephyr CI image.
-- **Zephyr CI Image**: this image is imported here for reference. It is identical to Zephyr docker
-  image provided by official Zephyr repository.
-- **Zephyr Base Image**: this is the bare bones docker image for development also provided by
-  Zephyr. It does not include anything beyond basic tools.
+- **boot**: Base OS with locales, build essentials, Python venv, and non-root user
+- **dev**: Development tools, Node.js, Docker CLI, editors, and debugging tools
+- **rust**: Rust toolchain with cross-compilation targets
+- **zephyr**: Zephyr RTOS CI/build environment with SDK, toolchains, and documentation tools
+- **workstation**: Full developer workstation with UX tools, LSPs, and configurations
 
 .. uml::
 
     @startditaa
 
     +-------------+
-    |   develop   |
+    | workstation |
     +-------------+
            ^
            |
     +-------------+
-    |    build    |
+    |   zephyr    |
     +-------------+
            ^
            |
     +-------------+
-    |     ci      |
+    |    rust     |
     +-------------+
            ^
            |
     +-------------+
-    |     base    |
+    |     dev     |
+    +-------------+
+           ^
+           |
+    +-------------+
+    |    boot     |
     +-------------+
 
     @endditaa
 
-Using Pre-built Image
-=====================
+Architecture
+------------
 
-Pull the latest prebuilt docker image:
+The build system uses Docker BuildKit multi-stage builds with build-only stages for heavy toolchains
+(Zephyr SDK, BSIM, OSS CAD Suite, Neovim, Ledger) to optimize layer caching and reduce rebuild times.
+Build artifacts are copied into final images, keeping build dependencies out of the final layers.
+
+**Supported Platforms:**
+
+- ``linux/amd64`` (x86_64) - Full support including x86-only tools (Doxygen, NRF tools)
+- ``linux/arm64`` (aarch64) - Most tools supported, some x86-only tools excluded
+
+**Supported Ubuntu Versions:**
+
+- ``Ubuntu 24.04 LTS`` - Long-term support release (recommended for production)
+- ``Ubuntu 25.04`` - Latest release with newer packages
+
+Images are tagged with Ubuntu version using semantic versioning build metadata:
+
+- ``swedishembedded/workstation:latest-ubuntu24.04``
+- ``swedishembedded/workstation:0.26.6-1+ubuntu24.04``
+- ``swedishembedded/workstation:ubuntu25.04``
+
+**Build System:**
+
+- Single ``Dockerfile`` with named stages
+- ``docker-bake.hcl`` for parallel BuildKit builds
+- ``Makefile`` with individual and parallel build targets
+- Multi-version Ubuntu support with automatic semantic versioning
+
+Using Pre-built Images
+======================
+
+Pull the latest prebuilt docker images:
 
 .. code-block:: sh
 
-    docker pull swedishembedded/develop:latest
-    docker run -ti -v $myworkspace:/data \
-           swedishembedded/develop:latest
+    # Full developer workstation (Ubuntu 25.04)
+    docker pull swedishembedded/workstation:latest
+    
+    # Or specific Ubuntu version
+    docker pull swedishembedded/workstation:ubuntu24.04  # Ubuntu 24.04 LTS
+    docker pull swedishembedded/workstation:ubuntu25.04  # Ubuntu 25.04
+    
+    # Or specific versioned image
+    docker pull swedishembedded/workstation:0.26.6-1+ubuntu24.04
+    
+    # Other images also available per Ubuntu version
+    docker pull swedishembedded/boot:ubuntu24.04
+    docker pull swedishembedded/dev:ubuntu24.04
+    docker pull swedishembedded/rust:ubuntu24.04
+    docker pull swedishembedded/zephyr:ubuntu24.04
 
-The command above mounts your workspace under /data inside the image so you can
+Running the Workstation
+------------------------
+
+Run with your workspace mounted:
+
+.. code-block:: sh
+
+    docker run -ti -v $myworkspace:/workspaces \
+           swedishembedded/workstation:latest
+
+The command above mounts your workspace under ``/workspaces`` inside the image so you can
 work on your local files from within the image.
 
-In order to flash firmware over USB JTAG you also need to run docker in
-privileged mode and mount usb within docker:
+Hardware Access (USB JTAG)
+---------------------------
+
+To flash firmware over USB JTAG, run docker in privileged mode and mount USB:
 
 .. code-block:: sh
 
-    docker run -ti -v $myworkspace:/data \
+    docker run -ti -v $myworkspace:/workspaces \
         --privileged -v /dev/bus/usb:/dev/bus/usb \
-        swedishembedded/develop:latest
+        swedishembedded/workstation:latest
 
-This will allow you to access JTAG adapter from inside the container. You can
+This allows you to access JTAG adapters from inside the container. You can
 also expose other resources to the container in the same way.
+
+Using Tmuxinator
+----------------
 
 Once inside the image, there is a workspace tool installed called tmuxinator
 which is bound to alias "workspace". You can open the demo workspace like this:
@@ -93,14 +152,121 @@ which is bound to alias "workspace". You can open the demo workspace like this:
 
     workspace demo
 
-Building Your Own Image
-=======================
+Building Your Own Images
+========================
 
-Images can be built using the supplied shell script:
+Prerequisites
+-------------
+
+Docker with BuildKit support (Docker 19.03+ or buildx plugin):
 
 .. code-block:: sh
 
-    ./scripts/build
+    # Enable BuildKit (if not default)
+    export DOCKER_BUILDKIT=1
+    
+    # Or install buildx
+    docker buildx install
+
+Build All Images in Parallel
+-----------------------------
+
+The fastest way to build all images is using ``docker buildx bake``:
+
+.. code-block:: sh
+
+    # Build all images in parallel (default Ubuntu 25.04)
+    make bake
+    
+    # Build and push all images
+    make bake/push
+    
+    # Build for multiple platforms
+    make PLATFORMS=linux/amd64,linux/arm64 bake
+
+Build for Specific Ubuntu Versions
+-----------------------------------
+
+Build images for specific Ubuntu versions with proper semantic versioning:
+
+.. code-block:: sh
+
+    # Build all images for Ubuntu 24.04 LTS
+    make bake/ubuntu24
+    
+    # Build all images for Ubuntu 25.04
+    make bake/ubuntu25
+    
+    # Build for BOTH Ubuntu versions in parallel
+    make bake/all-ubuntu
+    
+    # Build and push Ubuntu 24.04 images
+    make bake/ubuntu24/push
+    
+    # Build and push both Ubuntu versions
+    make bake/all-ubuntu/push
+    
+    # Check current version
+    make version
+    # Output:
+    # Current version: 0.26.6-1
+    # Ubuntu 24.04: 0.26.6-1+ubuntu24.04
+    # Ubuntu 25.04: 0.26.6-1+ubuntu25.04
+
+Build Individual Images
+-----------------------
+
+Build a specific image:
+
+.. code-block:: sh
+
+    # Build individual images
+    make boot
+    make dev
+    make rust
+    make zephyr
+    make workstation
+    
+    # Build without cache
+    make boot/nocache
+    
+    # Push to registry
+    make boot/push
+
+Build Sequentially
+------------------
+
+Build all images sequentially (slower but simpler):
+
+.. code-block:: sh
+
+    make all
+
+Multi-Platform Builds
+---------------------
+
+Build for multiple platforms using buildx:
+
+.. code-block:: sh
+
+    # Build and push for multiple platforms
+    make buildx/workstation/push PLATFORMS=linux/amd64,linux/arm64
+
+Configuration Options
+---------------------
+
+Customize builds with environment variables:
+
+.. code-block:: sh
+
+    # Change registry
+    make bake IMG_NS=myregistry
+    
+    # Change platforms
+    make bake PLATFORMS=linux/amd64,linux/arm64
+    
+    # Use different Docker command
+    make bake DOCKER=podman
 
 What is included
 ================
