@@ -26,7 +26,7 @@ ARG UBUNTU_VERSION=25.04
 ARG NODE_VERSION=22
 ARG ZSDK_VERSION=0.16.8
 ARG LLVM_VERSION=19
-ARG NEOVIM_VERSION=v0.11.0
+ARG NEOVIM_VERSION=v0.11.4
 ARG LEDGER_VERSION=3.3.2
 ARG OSS_CAD_SUITE_VERSION=20240211
 ARG DOXYGEN_VERSION=1.9.4
@@ -64,9 +64,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update && \
     apt-get install --no-install-recommends -y \
     # Core system utilities
+    apt-utils \
     ca-certificates \
     curl \
     gnupg \
+    openssl \
     wget \
     locales \
     sudo \
@@ -83,6 +85,7 @@ RUN apt-get -y update && \
     python3-pip \
     python3-setuptools \
     python3-venv \
+    python3-pexpect \
     python-is-python3 \
     && \
     apt-get clean -y && \
@@ -140,18 +143,35 @@ USER root
 RUN apt-get -y update && \
     apt-get install --no-install-recommends -y \
     # Shell and development utilities
+    argon2 \
     bash-completion \
+    bats \
     bc \
     btop \
+    certbot \
+    coreutils \
+    debianutils \
+    dnsutils \
     gettext \
+    git-lfs \
     gitk \
     iputils-ping \
+    kmod \
+    less \
+    nano \
+    netcat-openbsd \
     net-tools \
     openssh-client \
+    p7zip-full \
     parallel \
     picocom \
     plocate \
     pre-commit \
+    pv \
+    python3-certbot-dns-cloudflare \
+    python3-certbot-dns-google \
+    python3-certbot-dns-route53 \
+    rename \
     ripgrep \
     rsync \
     shellcheck \
@@ -159,12 +179,16 @@ RUN apt-get -y update && \
     tig \
     tmux \
     tree \
+    vim \
     xauth \
     xclip \
     xterm \
     xvfb \
+    xxd \
     xz-utils \
     yamllint \
+    lz4 \
+    zstd \
     # Editors
     emacs \
     neovim \
@@ -172,8 +196,10 @@ RUN apt-get -y update && \
     gdb-multiarch \
     valgrind \
     # Build and analysis tools
+    asciidoc \
     autoconf \
     automake \
+    binutils \
     bison \
     ccache \
     chrpath \
@@ -181,9 +207,11 @@ RUN apt-get -y update && \
     clangd \
     cpio \
     cscope \
+    cvs \
     device-tree-compiler \
     dfu-util \
     diffstat \
+    docbook-utils \
     dos2unix \
     doxygen \
     file \
@@ -192,20 +220,32 @@ RUN apt-get -y update && \
     gcovr \
     git-core \
     gperf \
+    groff \
     help2man \
     host \
     iproute2 \
     jq \
     lcov \
+    lzop \
+    m4 \
+    mercurial \
+    mtd-utils \
     pkg-config \
     srecord \
+    subversion \
+    swig \
+    texi2html \
     texinfo \
     thrift-compiler \
     tzdata \
+    u-boot-tools \
     unzip \
+    zip \
     # Libraries and development headers
+    desktop-file-utils \
     gnutls-dev \
     libacl1-dev \
+    libarchive-dev \
     libasound2-dev \
     libboost-date-time-dev \
     libboost-dev \
@@ -216,21 +256,24 @@ RUN apt-get -y update && \
     libboost-system-dev \
     libboost-test-dev \
     libcairo2-dev \
-    libclang-19-dev \
     libedit-dev \
+    libelf-dev \
     libgbm-dev \
-    libgccjit-14-dev \
-    libgccjit0 \
     libglib2.0-dev \
+    libgl1-mesa-dev \
+    libglu1-mesa-dev \
     libgmp3-dev \
+    libgnutls28-dev \
     libgtk-3-0 \
     libgtk2.0-0 \
     libgtest-dev \
     libjansson-dev \
     libjansson4 \
     liblocale-gettext-perl \
+    liblz-dev \
+    liblzo2-2 \
+    liblzo2-dev \
     libmpfr-dev \
-    libncurses5-dev \
     libnotify-dev \
     libnss3 \
     libpcap-dev \
@@ -241,20 +284,43 @@ RUN apt-get -y update && \
     libssl-dev \
     libtool \
     libtool-bin \
+    libx11-dev \
+    libxml2-utils \
     libxss1 \
     libxtst6 \
     luarocks \
     ncurses-dev \
     openbox \
     ovmf \
+    python3-cryptography \
+    python3-jsonschema \
     python3-ply \
+    python3-pyelftools \
     python3-xdg \
+    python3-yaml \
     python3-pygments \
     qemu-system \
+    qemu-user-static \
+    uuid \
+    uuid-dev \
+    x11proto-core-dev \
+    xsltproc \
+    zlib1g-dev \
     # Documentation tools
     biber \
     octave \
     && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install version-specific development libraries (Ubuntu 24.04+)
+# These packages are not available in Ubuntu 22.04
+RUN apt-get -y update && \
+    (apt-get install --no-install-recommends -y \
+        libclang-19-dev \
+        libgccjit-14-dev \
+        libgccjit0 || \
+        echo "Note: Some version-specific dev packages not available (expected on Ubuntu 22.04)") && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/*
 
@@ -267,12 +333,43 @@ RUN if [ "$(uname -m)" = "x86_64" ]; then \
             g++-multilib && \
         dpkg --add-architecture i386 && \
         apt-get -y update && \
-        # Try to install i386 SDL2, but continue if it fails (non-critical)
-        (apt-get install --no-install-recommends -y libsdl2-dev:i386 || \
-            echo "Warning: Could not install libsdl2-dev:i386 (non-critical, continuing...)") && \
+        # Try to install i386 packages, but continue if they fail (non-critical)
+        (apt-get install --no-install-recommends -y \
+            libc6-dev-i386 \
+            lib32ncurses5-dev \
+            lib32z-dev \
+            libsdl2-dev:i386 || \
+            echo "Warning: Could not install some i386 packages (non-critical, continuing...)") && \
         apt-get clean -y && \
         rm -rf /var/lib/apt/lists/* \
     ; fi
+
+# Install ARM cross-compilation toolchains (optional, conflicts with gcc-multilib on some versions)
+# On Ubuntu 25.04+, gcc-multilib conflicts with cross-compilation gcc
+# These are primarily for embedded development and can be skipped if multilib is needed
+RUN if [ "$(uname -m)" = "x86_64" ]; then \
+        apt-get -y update && \
+        (apt-get install --no-install-recommends -y \
+            gcc-arm-linux-gnueabihf \
+            gcc-aarch64-linux-gnu || \
+            echo "Note: ARM cross-compilation toolchains not installed (may conflict with gcc-multilib)") && \
+        apt-get clean -y && \
+        rm -rf /var/lib/apt/lists/* \
+    ; fi
+
+# Install embedded Linux build tools (Yocto/Debian/Android)
+RUN apt-get -y update && \
+    apt-get install --no-install-recommends -y \
+    binfmt-support \
+    debootstrap \
+    dosfstools \
+    gdisk \
+    gpart \
+    kpartx \
+    lvm2 \
+    && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Node.js from NodeSource
 RUN apt-get update && \
@@ -324,6 +421,26 @@ RUN curl -s https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/publ
     apt-get autoremove --purge -y && \
     rm -rf /var/lib/apt/lists/*
 
+# Install Smallstep step-cli
+RUN curl -fsSL https://packages.smallstep.com/keys/apt/repo-signing-key.gpg | tee /etc/apt/trusted.gpg.d/smallstep.asc > /dev/null && \
+    echo 'deb [signed-by=/etc/apt/trusted.gpg.d/smallstep.asc] https://packages.smallstep.com/stable/debian debs main' | tee /etc/apt/sources.list.d/smallstep.list && \
+    apt-get update && \
+    apt-get install -qy step-cli && \
+    apt-get clean -y && \
+    apt-get autoremove --purge -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install MinIO Client (mc)
+RUN curl -sSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc && \
+    chmod +x /usr/local/bin/mc
+
+# Install GitLab CLI (glab) - not available in Ubuntu 22.04 standard repos
+RUN apt-get -y update && \
+    (apt-get install --no-install-recommends -y glab || \
+        echo "Note: glab not available (not in Ubuntu 22.04 repositories)") && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/*
+
 # Create workspace directory
 RUN mkdir -p /workspaces && \
     chown user:user /workspaces
@@ -339,6 +456,11 @@ RUN pip3 install --upgrade pip && \
         west && \
     pip3 cache purge && \
     sudo chown -R user:user ${VIRTUAL_ENV}
+
+# Install Google repo tool
+RUN sudo mkdir -p /usr/local/bin && \
+    sudo curl -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-downloads/repo && \
+    sudo chmod a+rx /usr/local/bin/repo
 
 # Copy user configuration files
 COPY --chown=user:user conf/.bashrc /home/user/.bashrc
@@ -771,7 +893,8 @@ RUN pip3 install --no-cache-dir \
     pre-commit \
     mypy \
     robotframework-lsp \
-    pynvim && \
+    pynvim \
+    ssss && \
     echo "Installing renode-run" && \
     pip3 install --upgrade git+https://github.com/antmicro/renode-run.git && \
     pip3 cache purge && \

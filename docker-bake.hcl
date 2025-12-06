@@ -8,10 +8,11 @@
 #   docker buildx bake boot dev
 #
 # Build for specific Ubuntu version:
+#   docker buildx bake -f docker-bake.hcl ubuntu22
 #   docker buildx bake -f docker-bake.hcl ubuntu24
 #   docker buildx bake -f docker-bake.hcl ubuntu25
 #
-# Build both Ubuntu versions:
+# Build all Ubuntu versions:
 #   docker buildx bake -f docker-bake.hcl all-ubuntu
 #
 # Build for multiple platforms:
@@ -64,6 +65,10 @@ group "full" {
 }
 
 # Ubuntu version-specific groups
+group "ubuntu22" {
+  targets = ["boot-22", "dev-22", "rust-22", "zephyr-22", "workstation-22"]
+}
+
 group "ubuntu24" {
   targets = ["boot-24", "dev-24", "rust-24", "zephyr-24", "workstation-24"]
 }
@@ -74,6 +79,7 @@ group "ubuntu25" {
 
 group "all-ubuntu" {
   targets = [
+    "boot-22", "dev-22", "rust-22", "zephyr-22", "workstation-22",
     "boot-24", "dev-24", "rust-24", "zephyr-24", "workstation-24",
     "boot-25", "dev-25", "rust-25", "zephyr-25", "workstation-25"
   ]
@@ -155,6 +161,104 @@ target "workstation" {
     "org.opencontainers.image.title"       = "Swedish Embedded Workstation"
     "org.opencontainers.image.description" = "Full developer workstation with UX tools and configurations"
     "org.opencontainers.image.vendor"      = "Swedish Embedded"
+  }
+}
+
+# ==============================================================================
+# Ubuntu 22.04 Targets
+# ==============================================================================
+target "boot-22" {
+  inherits = ["_common"]
+  target   = "boot"
+  args     = {
+    UBUNTU_VERSION = "22.04"
+  }
+  tags = [
+    "${REGISTRY}/boot:${TAG}-ubuntu22.04",
+    "${REGISTRY}/boot:ubuntu22.04",
+    notequal("", VERSION) ? "${REGISTRY}/boot:${VERSION}+ubuntu22.04" : ""
+  ]
+  labels = {
+    "org.opencontainers.image.title"       = "Swedish Embedded Boot (Ubuntu 22.04)"
+    "org.opencontainers.image.description" = "Base OS with build essentials and Python (Ubuntu 22.04 LTS)"
+    "org.opencontainers.image.vendor"      = "Swedish Embedded"
+    "org.opencontainers.image.version"     = notequal("", VERSION) ? "${VERSION}+ubuntu22.04" : ""
+  }
+}
+
+target "dev-22" {
+  inherits = ["_common"]
+  target   = "dev"
+  args     = {
+    UBUNTU_VERSION = "22.04"
+  }
+  tags = [
+    "${REGISTRY}/dev:${TAG}-ubuntu22.04",
+    "${REGISTRY}/dev:ubuntu22.04",
+    notequal("", VERSION) ? "${REGISTRY}/dev:${VERSION}+ubuntu22.04" : ""
+  ]
+  labels = {
+    "org.opencontainers.image.title"       = "Swedish Embedded Dev (Ubuntu 22.04)"
+    "org.opencontainers.image.description" = "Development tools, Node.js, Docker CLI (Ubuntu 22.04 LTS)"
+    "org.opencontainers.image.vendor"      = "Swedish Embedded"
+    "org.opencontainers.image.version"     = notequal("", VERSION) ? "${VERSION}+ubuntu22.04" : ""
+  }
+}
+
+target "rust-22" {
+  inherits = ["_common"]
+  target   = "rust"
+  args     = {
+    UBUNTU_VERSION = "22.04"
+  }
+  tags = [
+    "${REGISTRY}/rust:${TAG}-ubuntu22.04",
+    "${REGISTRY}/rust:ubuntu22.04",
+    notequal("", VERSION) ? "${REGISTRY}/rust:${VERSION}+ubuntu22.04" : ""
+  ]
+  labels = {
+    "org.opencontainers.image.title"       = "Swedish Embedded Rust (Ubuntu 22.04)"
+    "org.opencontainers.image.description" = "Rust toolchain with cross-compilation (Ubuntu 22.04 LTS)"
+    "org.opencontainers.image.vendor"      = "Swedish Embedded"
+    "org.opencontainers.image.version"     = notequal("", VERSION) ? "${VERSION}+ubuntu22.04" : ""
+  }
+}
+
+target "zephyr-22" {
+  inherits = ["_common"]
+  target   = "zephyr"
+  args     = {
+    UBUNTU_VERSION = "22.04"
+  }
+  tags = [
+    "${REGISTRY}/zephyr:${TAG}-ubuntu22.04",
+    "${REGISTRY}/zephyr:ubuntu22.04",
+    notequal("", VERSION) ? "${REGISTRY}/zephyr:${VERSION}+ubuntu22.04" : ""
+  ]
+  labels = {
+    "org.opencontainers.image.title"       = "Swedish Embedded Zephyr (Ubuntu 22.04)"
+    "org.opencontainers.image.description" = "Zephyr RTOS CI/build environment (Ubuntu 22.04 LTS)"
+    "org.opencontainers.image.vendor"      = "Swedish Embedded"
+    "org.opencontainers.image.version"     = notequal("", VERSION) ? "${VERSION}+ubuntu22.04" : ""
+  }
+}
+
+target "workstation-22" {
+  inherits = ["_common"]
+  target   = "workstation"
+  args     = {
+    UBUNTU_VERSION = "22.04"
+  }
+  tags = [
+    "${REGISTRY}/workstation:${TAG}-ubuntu22.04",
+    "${REGISTRY}/workstation:ubuntu22.04",
+    notequal("", VERSION) ? "${REGISTRY}/workstation:${VERSION}+ubuntu22.04" : ""
+  ]
+  labels = {
+    "org.opencontainers.image.title"       = "Swedish Embedded Workstation (Ubuntu 22.04)"
+    "org.opencontainers.image.description" = "Full developer workstation (Ubuntu 22.04 LTS)"
+    "org.opencontainers.image.vendor"      = "Swedish Embedded"
+    "org.opencontainers.image.version"     = notequal("", VERSION) ? "${VERSION}+ubuntu22.04" : ""
   }
 }
 

@@ -196,7 +196,7 @@ call plug#begin()
 	Plug 'ledger/vim-ledger' " ledger accounting system.
 	Plug 'lervag/vimtex' " LaTeX editing.
 	Plug 'lewis6991/gitsigns.nvim' " text buffer Git integration.
-	Plug 'madox2/vim-ai' " AI-assisted coding.
+	" Plug 'madox2/vim-ai' " AI-assisted coding.
 	Plug 'majutsushi/tagbar' " displaying tags in a sidebar.
 	Plug 'mbbill/undotree' " Undo/Redo History Visualizer
 	Plug 'morhetz/gruvbox' " Gruvbox: Color Scheme
@@ -233,14 +233,23 @@ autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)'))
 \| endif
 
 " Plugin: catppuccin/nvim {{{
-colorscheme catppuccin
+" Set colorscheme only if installed
+silent! colorscheme catppuccin
+if !exists('g:colors_name') || g:colors_name != 'catppuccin'
+	" Fallback to a safe colorscheme if catppuccin is not available
+	silent! colorscheme desert
+endif
 set background=dark " Optional: change to 'light' for the light version
 " }}}
 
 " Plugin: lewis6991/gitsigns.nvim {{{
-if has_key(plugs, 'gitsigns.nvim')
+if has_key(g:plugs, 'gitsigns.nvim') && isdirectory(g:plugs['gitsigns.nvim'].dir)
 	lua << EOF
-		require("gitsigns").setup{
+		local ok, gitsigns = pcall(require, "gitsigns")
+		if not ok then
+			return
+		end
+		gitsigns.setup{
 			signs = {
 				add          = { text = '│' },
 				change       = { text = '│' },
@@ -332,7 +341,7 @@ nnoremap <leader>a. :AIRedo<CR>
 " }}}
 
 " Plugin: airblade/vim-gitgutter {{{
-if has_key(plugs, 'vim-gitgutter')
+if has_key(g:plugs, 'vim-gitgutter') && isdirectory(g:plugs['vim-gitgutter'].dir)
 	let g:gitgutter_enabled = 1
 	let g:gitgutter_sign_added = '+'
 	let g:gitgutter_sign_modified = '>'
@@ -397,7 +406,7 @@ let g:vimwiki_list = [{'path': '~/vimwiki/', 'syntax': 'markdown', 'ext': '.md'}
 " }}}
 
 " Plugin: dense-analysis/ale {{{
-if has_key(plugs, 'ale')
+if has_key(g:plugs, 'ale') && isdirectory(g:plugs['ale'].dir)
 	" Ignore git commit when linting (highly annoying)
 	let g:ale_pattern_options = {
 	\		'COMMIT_EDITMSG$': {'ale_linters': [], 'ale_fixers': []}
@@ -466,14 +475,14 @@ endif
 " }}}
 
 " Plugin: dhruvasagar/vim-dotoo {{{
-if has_key(plugs, 'vim-dotoo')
+if has_key(g:plugs, 'vim-dotoo') && isdirectory(g:plugs['vim-dotoo'].dir)
 	let g:dotoo#agenda#files = ['~/vimwiki/*.dotoo']
 	au BufRead,BufNewFile *.dotoo set filetype=dotoo
 endif
 " }}}
 
 " Plugin: habamax/vim-asciidoctor {{{
-if has_key(plugs, 'vim-asciidoctor')
+if has_key(g:plugs, 'vim-asciidoctor') && isdirectory(g:plugs['vim-asciidoctor'].dir)
 	let g:asciidoctor_folding = 1
 	let g:asciidoctor_fold_options = 1
 	let g:asciidoctor_fenced_languages = ['lua', 'vim', 'sh', 'python', 'c', 'javascript']
@@ -481,7 +490,7 @@ endif
 " }}}
 
 " Plugin: hrsh7th/nvim-compe {{{
-if has_key(plugs, 'nvim-compe')
+if has_key(g:plugs, 'nvim-compe') && isdirectory(g:plugs['nvim-compe'].dir)
 	set completeopt=menuone,noselect
 	let g:compe = {}
 	" Enable or disable the nvim-compe plugin
@@ -576,7 +585,7 @@ nnoremap <Leader>gdh :Gdiffsplit<CR>
 " }}}
 
 " Plugin: neoclide/coc.nvim: autocompletion {{{
-if has_key(plugs, 'coc.nvim')
+if has_key(g:plugs, 'coc.nvim') && isdirectory(g:plugs['coc.nvim'].dir)
 	let g:coc_global_extensions = ['coc-clangd', 'coc-tsserver']
 	let g:clangd_install_prefix = '/usr/'
 	let g:clangd_command = ['clangd',
@@ -697,10 +706,14 @@ endif
 " }}}
 
 " Plugin: nvim-treesitter/nvim-treesitter {{{
-if has_key(plugs, 'nvim-treesitter')
+if has_key(g:plugs, 'nvim-treesitter') && isdirectory(g:plugs['nvim-treesitter'].dir)
 	lua << EOF
 		-- Treesitter configuration
-		require('nvim-treesitter.configs').setup {
+		local ok, treesitter = pcall(require, 'nvim-treesitter.configs')
+		if not ok then
+			return
+		end
+		treesitter.setup {
 			-- If TS highlights are not enabled at all, or disabled via `disable` prop,
 			-- highlighting will fallback to default Vim syntax highlighting
 			highlight = {
@@ -747,9 +760,13 @@ let g:NERDTreeGitStatusIndicatorMapCustom = {
 " }}}
 
 " Plugin: nvim-orgmode/orgmode {{{
-if has_key(plugs, 'orgmode')
+if has_key(g:plugs, 'orgmode') && isdirectory(g:plugs['orgmode'].dir)
 	lua << EOF
-	require('orgmode').setup({
+	local ok, orgmode = pcall(require, 'orgmode')
+	if not ok then
+		return
+	end
+	orgmode.setup({
 		org_agenda_files = {'~/board.org'},
 		org_default_notes_file = '~/refile.org',
 	})
@@ -759,27 +776,43 @@ endif
 
 " Plugin: neovim/nvim-lspconfig: language server configs {{{
 lua << EOF
-local lspconfig = require'lspconfig'
-lspconfig.vimls.setup {}
-lspconfig.dockerls.setup {}
-lspconfig.pyright.setup {}
-lspconfig.tailwindcss.setup{}
-lspconfig.ts_ls.setup {
-  on_attach = function(client, bufnr)
-	client.config.flags = {
-      debounce_text_changes = 150,  -- Adjust this value as needed
-    }
-    client.resolved_capabilities.document_formatting = false
-    client.resolved_capabilities.document_range_formatting = false
-  end,
-  filetypes = { "typescript", "typescriptreact", "typescript.tsx" },
-  cmd = { "typescript-language-server", "--stdio" }
-}
-lspconfig.robotframework_ls.setup({})
-lspconfig.clangd.setup{
+-- Use the modern vim.lsp.config API (Neovim 0.10+)
+-- Safely check if the new API is available
+if not vim.lsp.config then
+	-- Fallback to old lspconfig API for older Neovim versions
+	local ok, lspconfig = pcall(require, 'lspconfig')
+	if ok then
+		lspconfig.vimls.setup {}
+		lspconfig.dockerls.setup {}
+		lspconfig.pyright.setup {}
+		lspconfig.tailwindcss.setup {}
+		lspconfig.ts_ls.setup {}
+		lspconfig.robotframework_ls.setup {}
+		lspconfig.clangd.setup { cmd = { "clangd", "--background-index" } }
+	end
+	return
+end
+
+-- Modern API: Enable language servers with defaults
+vim.lsp.enable('vimls')
+vim.lsp.enable('dockerls')
+vim.lsp.enable('pyright')
+vim.lsp.enable('tailwindcss')
+vim.lsp.enable('robotframework_ls')
+
+-- TypeScript with custom config
+vim.lsp.config('ts_ls', {
+	filetypes = { "typescript", "typescriptreact", "typescript.tsx" },
+	cmd = { "typescript-language-server", "--stdio" },
+})
+vim.lsp.enable('ts_ls')
+
+-- Clangd with custom config
+vim.lsp.config('clangd', {
 	cmd = { "clangd", "--background-index" },
 	filetypes = { "c", "cpp" },
-}
+})
+vim.lsp.enable('clangd')
 
 -- Global mappings.
 -- See `:help vim.diagnostic.*` for documentation on any of the below functions
@@ -867,7 +900,7 @@ nnoremap <Leader>s :call execute('spell! ' . expand('<cword>'))<CR>
 " }}}
 
 " Plugin: habamax/vim-asciidoctor {{{
-if has_key(plugs, 'vim-asciidoctor')
+if has_key(g:plugs, 'vim-asciidoctor') && isdirectory(g:plugs['vim-asciidoctor'].dir)
 	let g:asciidoctor_folding = 1
 	let g:asciidoctor_fold_options = 1
 	let g:asciidoctor_fenced_languages = ['lua', 'vim', 'sh', 'python', 'c', 'javascript']
@@ -894,9 +927,12 @@ set runtimepath+=~/.config/nvim/python/
 " }}}
 
 " Plugin: akinsho/bufferline.nvim {{{
-if has_key(plugs, 'bufferline.nvim')
+if has_key(g:plugs, 'bufferline.nvim') && isdirectory(g:plugs['bufferline.nvim'].dir)
 	lua << EOF
-		require("bufferline").setup{}
+		local ok, bufferline = pcall(require, "bufferline")
+		if ok then
+			bufferline.setup{}
+		end
 EOF
 endif
 " }}}
