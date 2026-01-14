@@ -24,17 +24,15 @@
 # ==============================================================================
 ARG UBUNTU_VERSION=25.04
 ARG NODE_VERSION=22
-ARG ZSDK_VERSION=0.16.8
-ARG LLVM_VERSION=19
+ARG ZSDK_VERSION=0.17.4
+ARG LLVM_VERSION=20
 ARG NEOVIM_VERSION=v0.11.4
-ARG LEDGER_VERSION=3.3.2
 ARG OSS_CAD_SUITE_VERSION=20240211
 ARG DOXYGEN_VERSION=1.9.4
 ARG RENODE_VERSION=1.15.3
 ARG BSIM_VERSION=v2.1
 ARG SPARSE_VERSION=9212270048c3bd23f56c20a83d4f89b870b2b26e
 ARG PROTOC_VERSION=21.7
-ARG EMACS_VERSION=29.3
 
 # User configuration
 ARG UID=1000
@@ -472,7 +470,7 @@ WORKDIR /workspaces
 # Environment configuration
 ENV DISPLAY=:0
 ENV SHELL=/bin/bash
-ENV EDITOR=nvim
+ENV EDITOR=vim
 
 ENTRYPOINT ["/home/user/init"]
 CMD ["/bin/bash"]
@@ -621,36 +619,6 @@ RUN if [ "$(uname -m)" = "x86_64" ]; then \
     ; fi
 
 # ==============================================================================
-# Stage: ledger (build-only)
-# ==============================================================================
-# Builds ledger from source
-# ==============================================================================
-FROM zephyr-base AS ledger
-
-ARG LEDGER_VERSION
-
-USER root
-
-# Install ledger build dependencies
-RUN apt-get update && \
-    apt-get install -qy --no-install-recommends \
-        libgit2-dev && \
-    apt-get clean -y && \
-    rm -rf /var/lib/apt/lists/*
-
-# Build and install ledger to /opt/ledger-install
-RUN wget -q https://github.com/ledger/ledger/archive/refs/tags/v${LEDGER_VERSION}.tar.gz && \
-    tar -xzf v${LEDGER_VERSION}.tar.gz && \
-    cd ledger-${LEDGER_VERSION} && \
-    mkdir build && \
-    cd build && \
-    cmake -DCMAKE_INSTALL_PREFIX=/usr/local .. && \
-    make -j $(nproc) && \
-    make install DESTDIR=/opt/ledger-install && \
-    cd ../.. && \
-    rm -rf ledger-* v${LEDGER_VERSION}.tar.gz
-
-# ==============================================================================
 # Stage: neovim (build-only)
 # ==============================================================================
 # Builds Neovim from source
@@ -755,7 +723,6 @@ USER root
 COPY --from=zephyr-sdk /opt/toolchains /opt/toolchains
 COPY --from=bsim /opt/bsim_west /opt/bsim_west
 COPY --from=oss-cad /opt/oss-cad-suite* /opt/
-COPY --from=ledger /opt/ledger-install/ /
 COPY --from=doxygen /opt/doxygen* /opt/
 COPY --from=sparse /opt/sparse /opt/sparse
 COPY --from=protoc /opt/protoc /opt/protoc
@@ -858,7 +825,6 @@ FROM zephyr AS workstation
 
 ARG NODE_VERSION
 ARG NEOVIM_VERSION
-ARG EMACS_VERSION
 
 USER root
 
@@ -923,7 +889,7 @@ ENV CARGO_HOME=/opt/rust
 ENV PATH=${PATH}:/opt/rust/bin
 ENV HOSTNAME=workstation
 ENV SHELL=/bin/bash
-ENV EDITOR=nvim
+ENV EDITOR=vim
 
 WORKDIR /workspace
 
