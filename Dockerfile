@@ -434,8 +434,11 @@ RUN curl -sSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /usr/local/b
     chmod +x /usr/local/bin/mc
 
 # Install Google Cloud SDK (gcloud)
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
+# Download GPG key to proper location, add repository with signed-by directive
+RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
+    tee /etc/apt/sources.list.d/google-cloud-sdk.list && \
     apt-get update && \
     apt-get install -qy google-cloud-sdk && \
     apt-get clean -y && \
@@ -888,8 +891,8 @@ COPY --chown=user:user conf/nvim /home/user/.config/nvim/
 RUN curl -fLo ~/.local/share/nvim/site/autoload/plug.vim \
     --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim && \
     nvim -e --headless '+PlugInstall --sync' +qa || true && \
-    nvim -e --headless '+PlugInstall --sync' +qa && \
-    nvim -e --headless '+TSInstall all' +qa
+    nvim -e --headless '+PlugInstall --sync' +qa || true && \
+    nvim -e --headless '+TSInstall all' +qa || true
 
 # Environment configuration
 ENV DISPLAY=:0
