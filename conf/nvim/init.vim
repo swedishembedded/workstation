@@ -217,13 +217,9 @@ call plug#begin()
 	Plug 'lewis6991/gitsigns.nvim'
 	Plug 'tpope/vim-fugitive'
 
-	" Code completion and LSP
-	Plug 'neovim/nvim-lspconfig'
-
 	" Code analysis and linting
 	Plug 'dense-analysis/ale'
 	Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
-	Plug 'p00f/nvim-ts-rainbow'
 
 	" Development tools
 	Plug 'puremourning/vimspector'
@@ -359,7 +355,7 @@ if has_key(g:plugs, 'ale') && isdirectory(g:plugs['ale'].dir)
 	let g:ale_hover_to_floating_preview=1
 	let g:ale_use_global_executables = 1
 	let g:ale_sign_column_always = 1
-	let g:ale_disable_lsp = 1  " Let nvim-lspconfig handle LSP
+	let g:ale_disable_lsp = 1  " Use built-in Neovim LSP instead of ALE's LSP
 
 	" Cspell options
 	let g:ale_cspell_use_global = 1
@@ -567,7 +563,7 @@ nmap <F5> :UndotreeToggle<CR>
 " }}}
 
 
-" Plugin: neovim/nvim-lspconfig {{{
+" Built-in Neovim LSP Configuration {{{
 " =============================================================================
 " LSP CONFIGURATION WITH FLOATING WINDOWS
 " =============================================================================
@@ -604,49 +600,107 @@ nmap <F5> :UndotreeToggle<CR>
 " 
 " =============================================================================
 lua << EOF
--- Load lspconfig (required after removing coc.nvim)
-local ok, lspconfig = pcall(require, 'lspconfig')
-if not ok then
-	vim.notify("⚠️  nvim-lspconfig not found! LSP features won't work.", vim.log.levels.WARN)
-	vim.notify("Install it with :PlugInstall or add: Plug 'neovim/nvim-lspconfig'", vim.log.levels.WARN)
-	return
+-- Configure language servers using built-in Neovim LSP API
+-- Auto-start LSP servers when opening matching file types
+
+-- Helper function to find root directory
+local function find_root(markers)
+	return function(fname)
+		local found = vim.fs.find(markers, { upward = true, path = fname })[1]
+		return found and vim.fs.dirname(found) or nil
+	end
 end
 
--- Configure language servers using lspconfig
--- These will auto-start when you open matching file types
-
--- Vim script LSP
-lspconfig.vimls.setup {}
-
--- Docker LSP
-lspconfig.dockerls.setup {}
-
--- Python LSP
-lspconfig.pyright.setup {}
-
--- Tailwind CSS LSP
-lspconfig.tailwindcss.setup {}
-
--- Robot Framework LSP
-lspconfig.robotframework_ls.setup {}
-
--- TypeScript/JavaScript LSP with inlay hints enabled
-lspconfig.ts_ls.setup {
-	filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact", "typescript.tsx" },
-	cmd = { "typescript-language-server", "--stdio" },
-	init_options = {
-		preferences = {
-			-- Disable inlay hints for TypeScript/JavaScript (they interfere with editing)
-			includeInlayParameterNameHints = "none",
-			includeInlayParameterNameHintsWhenArgumentMatchesName = false,
-			includeInlayFunctionParameterTypeHints = false,
-			includeInlayVariableTypeHints = false,
-			includeInlayPropertyDeclarationTypeHints = false,
-			includeInlayFunctionLikeReturnTypeHints = false,
-			includeInlayEnumMemberValueHints = false,
+-- Auto-start LSP on FileType
+local lsp_configs = {
+	vimls = {
+		cmd = { 'vim-language-server', '--stdio' },
+		filetypes = { 'vim' },
+		root_dir = find_root({ '.git', 'init.vim', 'vimrc' }),
+	},
+	dockerls = {
+		cmd = { 'docker-langserver', '--stdio' },
+		filetypes = { 'dockerfile' },
+		root_dir = find_root({ '.git', 'Dockerfile' }),
+	},
+	pyright = {
+		cmd = { 'pyright-langserver', '--stdio' },
+		filetypes = { 'python' },
+		root_dir = find_root({ '.git', 'pyproject.toml', 'setup.py', 'setup.cfg', 'requirements.txt' }),
+	},
+	tailwindcss = {
+		cmd = { 'tailwindcss-language-server', '--stdio' },
+		filetypes = { 'html', 'css', 'scss', 'javascript', 'javascriptreact', 'typescript', 'typescriptreact' },
+		root_dir = find_root({ 'tailwind.config.js', 'tailwind.config.ts', '.git' }),
+	},
+	robotframework_ls = {
+		cmd = { 'robotframework_ls' },
+		filetypes = { 'robot' },
+		root_dir = find_root({ '.git', 'robot.yaml' }),
+	},
+	ts_ls = {
+		cmd = { 'typescript-language-server', '--stdio' },
+		filetypes = { 'javascript', 'javascriptreact', 'typescript', 'typescriptreact', 'typescript.tsx' },
+		root_dir = find_root({ 'package.json', 'tsconfig.json', 'jsconfig.json', '.git' }),
+		settings = {
+			typescript = {
+				inlayHints = {
+					includeInlayParameterNameHints = 'none',
+					includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+					includeInlayFunctionParameterTypeHints = false,
+					includeInlayVariableTypeHints = false,
+					includeInlayPropertyDeclarationTypeHints = false,
+					includeInlayFunctionLikeReturnTypeHints = false,
+					includeInlayEnumMemberValueHints = false,
+				}
+			},
+			javascript = {
+				inlayHints = {
+					includeInlayParameterNameHints = 'none',
+					includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+					includeInlayFunctionParameterTypeHints = false,
+					includeInlayVariableTypeHints = false,
+					includeInlayPropertyDeclarationTypeHints = false,
+					includeInlayFunctionLikeReturnTypeHints = false,
+					includeInlayEnumMemberValueHints = false,
+				}
+			}
 		}
 	},
 }
+
+-- Function to start LSP client
+local function start_lsp(config, bufnr)
+	local root_dir = config.root_dir(vim.api.nvim_buf_get_name(bufnr))
+	if not root_dir then
+		return
+	end
+	
+	vim.lsp.start({
+		name = config.name or 'lsp',
+		cmd = config.cmd,
+		root_dir = root_dir,
+		settings = config.settings or {},
+	}, {
+		bufnr = bufnr,
+		reuse_client = function(client, conf)
+			return client.config.root_dir == conf.root_dir
+		end,
+	})
+end
+
+-- Auto-start LSP servers on matching filetypes
+for name, config in pairs(lsp_configs) do
+	config.name = name
+	for _, ft in ipairs(config.filetypes) do
+		vim.api.nvim_create_autocmd('FileType', {
+			pattern = ft,
+			callback = function(args)
+				start_lsp(config, args.buf)
+			end,
+		})
+	end
+end
 
 -- Clangd with custom config for Zephyr RTOS support
 -- Function to find compile_commands.json in Zephyr build directories
@@ -684,54 +738,61 @@ local function find_zephyr_compile_commands()
 	return nil
 end
 
--- Enhanced clangd configuration
-local clangd_cmd = {
-	"clangd",
-	"--background-index",
-	"--clang-tidy",
-	"--completion-style=detailed",
-	"--header-insertion=never",
-	"--cross-file-rename",
-	"--query-driver=/usr/bin/*-gcc,/usr/bin/*-g++,/opt/*/bin/*-gcc,/opt/*/bin/*-g++",
-}
-
--- Try to find and add compile commands directory
-local compile_commands_dir = find_zephyr_compile_commands()
-if compile_commands_dir then
-	table.insert(clangd_cmd, "--compile-commands-dir=" .. compile_commands_dir)
-end
-
--- Clangd LSP with Zephyr support and inlay hints
-lspconfig.clangd.setup {
-	cmd = clangd_cmd,
-	filetypes = { "c", "cpp", "h" },
-	root_dir = function(fname)
-		-- Look for common Zephyr project markers
-		return vim.fs.dirname(vim.fs.find({
+-- Clangd LSP with Zephyr support
+vim.api.nvim_create_autocmd('FileType', {
+	pattern = { 'c', 'cpp', 'h' },
+	callback = function(args)
+		local root_dir = vim.fs.dirname(vim.fs.find({
 			'compile_commands.json',
 			'.clangd',
 			'.git',
 			'west.yml',
 			'zephyr',
 			'CMakeLists.txt',
-		}, { upward = true, path = fname })[1])
-	end,
-	init_options = {
-		clangdFileStatus = true,
-		usePlaceholders = false,
-		completeUnimported = false,
-		semanticHighlighting = true,
-	},
-	settings = {
-		clangd = {
-			InlayHints = {
-				Enabled = false,
-				ParameterNames = false,
-				DeducedTypes = false,
+		}, { upward = true, path = vim.api.nvim_buf_get_name(args.buf) })[1])
+		
+		if not root_dir then
+			return
+		end
+		
+		-- Enhanced clangd configuration
+		local clangd_cmd = {
+			"clangd",
+			"--background-index",
+			"--clang-tidy",
+			"--completion-style=detailed",
+			"--header-insertion=never",
+			"--cross-file-rename",
+			"--query-driver=/usr/bin/*-gcc,/usr/bin/*-g++,/opt/*/bin/*-gcc,/opt/*/bin/*-g++",
+		}
+		
+		-- Try to find and add compile commands directory
+		local compile_commands_dir = find_zephyr_compile_commands()
+		if compile_commands_dir then
+			table.insert(clangd_cmd, "--compile-commands-dir=" .. compile_commands_dir)
+		end
+		
+		vim.lsp.start({
+			name = 'clangd',
+			cmd = clangd_cmd,
+			root_dir = root_dir,
+			settings = {
+				clangd = {
+					InlayHints = {
+						Enabled = false,
+						ParameterNames = false,
+						DeducedTypes = false,
+					},
+				},
 			},
-		},
-	},
-}
+		}, {
+			bufnr = args.buf,
+			reuse_client = function(client, conf)
+				return client.config.root_dir == conf.root_dir
+			end,
+		})
+	end,
+})
 
 -- Global completion settings
 vim.opt.completeopt = {'menu', 'menuone', 'noselect'}
@@ -1100,13 +1161,6 @@ if has_key(g:plugs, 'nvim-treesitter') && isdirectory(g:plugs['nvim-treesitter']
 				use_languagetree = true,
 				disable = {},
 			},
-			rainbow = {
-				enable = true,
-				extended_mode = true,
-				max_file_lines = nil,
-				colors = {},
-				termcolors = {}
-			},
 			ensure_installed = {'c'},
 		}
 EOF
@@ -1244,24 +1298,6 @@ function! ZephyrSwitchBuild(build_dir)
 				vim.lsp.stop_client(client.id)
 			end
 		end
-		
-		-- Update clangd command with new build directory
-		local lspconfig = require('lspconfig')
-		local clangd_cmd = {
-			"clangd",
-			"--background-index",
-			"--clang-tidy",
-			"--completion-style=detailed",
-			"--header-insertion=never",
-			"--cross-file-rename",
-			"--query-driver=/usr/bin/*-gcc,/usr/bin/*-g++,/opt/*/bin/*-gcc,/opt/*/bin/*-g++",
-			"--compile-commands-dir=" .. build_dir,
-		}
-		
-		lspconfig.clangd.setup {
-			cmd = clangd_cmd,
-			filetypes = { "c", "cpp", "h" },
-		}
 		
 		-- Restart by editing the file again
 		vim.cmd('edit')
@@ -1412,7 +1448,7 @@ nnoremap <Leader>s :call execute('spell! ' . expand('<cword>'))<CR>
 " Check which LSP servers are attached to current buffer
 command! LspClients lua vim.notify(vim.inspect(vim.lsp.get_clients()), vim.log.levels.INFO)
 
-" Show detailed LSP info for current buffer (this is provided by lspconfig)
+" Show detailed LSP info for current buffer
 command! LspInfo LspInfo
 
 " Restart LSP servers for current buffer
