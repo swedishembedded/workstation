@@ -4,3 +4,4 @@ click
 clang
 black
 robotframework
+bump2version

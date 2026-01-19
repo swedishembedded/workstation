@@ -224,6 +224,7 @@ RUN apt-get -y update && \
     iproute2 \
     jq \
     lcov \
+    ledger \
     lzop \
     m4 \
     mercurial \
@@ -431,6 +432,15 @@ RUN curl -fsSL https://packages.smallstep.com/keys/apt/repo-signing-key.gpg | te
 # Install MinIO Client (mc)
 RUN curl -sSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc && \
     chmod +x /usr/local/bin/mc
+
+# Install Google Cloud SDK (gcloud)
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
+    apt-get update && \
+    apt-get install -qy google-cloud-sdk && \
+    apt-get clean -y && \
+    apt-get autoremove --purge -y && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install GitLab CLI (glab) - not available in Ubuntu 22.04 standard repos
 RUN apt-get -y update && \
