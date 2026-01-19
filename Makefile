@@ -28,7 +28,7 @@
 # ==============================================================================
 # Configuration
 # ==============================================================================
-DOCKER       ?= docker
+DOCKER       ?= sudo docker
 DOCKERFILE   := Dockerfile
 BAKE_FILE    := docker-bake.hcl
 IMG_NS       ?= swedishembedded
