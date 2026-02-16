@@ -386,12 +386,18 @@ RUN mkdir -p /etc/apt/keyrings && \
     chmod a+r /etc/apt/keyrings/docker.asc && \
     UBUNTU_CODENAME=$(lsb_release -cs) && \
     DOCKER_CODENAME=${UBUNTU_CODENAME} && \
+    # Map HOSTTYPE to Docker's architecture naming (amd64 or arm64)
+    DOCKER_ARCH=$(case ${HOSTTYPE} in \
+        x86_64) echo "amd64";; \
+        aarch64) echo "arm64";; \
+        *) echo "amd64";; \
+    esac) && \
     # Fallback to noble (24.04) for unsupported releases like plucky (25.04)
-    if ! curl -fsSL https://download.docker.com/linux/ubuntu/dists/${UBUNTU_CODENAME}/stable/binary-amd64/Packages 2>/dev/null | grep -q "Package:"; then \
+    if ! curl -fsSL https://download.docker.com/linux/ubuntu/dists/${UBUNTU_CODENAME}/stable/binary-${DOCKER_ARCH}/Packages 2>/dev/null | grep -q "Package:"; then \
         echo "Docker repository not available for ${UBUNTU_CODENAME}, using noble (24.04) fallback"; \
         DOCKER_CODENAME="noble"; \
     fi && \
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${DOCKER_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    echo "deb [arch=${DOCKER_ARCH} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${DOCKER_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
     apt-get update && \
     if [ "${INSTALL_DOCKER_DAEMON}" = "true" ]; then \
         apt-get install -qy \
@@ -430,7 +436,12 @@ RUN curl -fsSL https://packages.smallstep.com/keys/apt/repo-signing-key.gpg | te
     rm -rf /var/lib/apt/lists/*
 
 # Install MinIO Client (mc)
-RUN curl -sSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc && \
+RUN MINIO_ARCH=$(case ${HOSTTYPE} in \
+        x86_64) echo "linux-amd64";; \
+        aarch64) echo "linux-arm64";; \
+        *) echo "linux-amd64";; \
+    esac) && \
+    curl -sSL https://dl.min.io/client/mc/release/${MINIO_ARCH}/mc -o /usr/local/bin/mc && \
     chmod +x /usr/local/bin/mc
 
 # Install Google Cloud SDK (gcloud)
