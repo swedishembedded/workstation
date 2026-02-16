@@ -143,6 +143,42 @@ bake/all-ubuntu/push:
 		all-ubuntu
 
 # ==============================================================================
+# ARM/Multi-Architecture Builds
+# ==============================================================================
+bake/arm64:
+	@echo "Building all images for ARM64 (Apple Silicon Mac)..."
+	$(DOCKER) buildx bake \
+		--file $(BAKE_FILE) \
+		--set=*.platform=linux/arm64
+
+bake/arm64/load:
+	@echo "Building and loading all images for ARM64..."
+	$(DOCKER) buildx bake \
+		--file $(BAKE_FILE) \
+		--set=*.platform=linux/arm64 \
+		--load
+
+bake/arm64/push:
+	@echo "Building and pushing all images for ARM64..."
+	$(DOCKER) buildx bake \
+		--file $(BAKE_FILE) \
+		--set=*.platform=linux/arm64 \
+		--push
+
+bake/multi-arch:
+	@echo "Building all images for multiple architectures (amd64 + arm64)..."
+	$(DOCKER) buildx bake \
+		--file $(BAKE_FILE) \
+		--set=*.platform=linux/amd64,linux/arm64
+
+bake/multi-arch/push:
+	@echo "Building and pushing all images for multiple architectures..."
+	$(DOCKER) buildx bake \
+		--file $(BAKE_FILE) \
+		--set=*.platform=linux/amd64,linux/arm64 \
+		--push
+
+# ==============================================================================
 # Individual Image Targets
 # ==============================================================================
 define build_target
@@ -265,6 +301,13 @@ help:
 	@echo "  push                   - Push all images to registry"
 	@echo "  nocache                - Build all images without cache"
 	@echo ""
+	@echo "ARM/Multi-architecture builds:"
+	@echo "  bake/arm64             - Build all images for ARM64 (Apple Silicon Mac)"
+	@echo "  bake/arm64/load        - Build and load ARM64 images"
+	@echo "  bake/arm64/push        - Build and push ARM64 images"
+	@echo "  bake/multi-arch        - Build for both amd64 and arm64"
+	@echo "  bake/multi-arch/push   - Build and push for both architectures"
+	@echo ""
 	@echo "Ubuntu version-specific builds:"
 	@echo "  bake/ubuntu22          - Build all Ubuntu 22.04 images ($(VERSION)+ubuntu22.04)"
 	@echo "  bake/ubuntu24          - Build all Ubuntu 24.04 images ($(VERSION)+ubuntu24.04)"
@@ -309,10 +352,12 @@ help:
 	@echo "Examples:"
 	@echo "  make boot                              - Build boot image"
 	@echo "  make bake                              - Build all images in parallel"
+	@echo "  make bake/arm64                        - Build all images for Apple Silicon Mac"
+	@echo "  make bake/multi-arch                   - Build for both x86 and ARM"
 	@echo "  make bake/all-ubuntu                   - Build all Ubuntu versions"
 	@echo "  make bake/ubuntu22/push                - Build and push Ubuntu 22.04"
 	@echo "  make bake/ubuntu24/push                - Build and push Ubuntu 24.04"
-	@echo "  make PLATFORMS=linux/amd64,linux/arm64 bake/all-ubuntu/push"
+	@echo "  make PLATFORMS=linux/arm64 buildx/boot - Build boot for ARM64"
 	@echo "  make shell/workstation/ubuntu22        - Shell in Ubuntu 22.04 workstation"
 
 bootstrap:

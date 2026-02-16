@@ -10,6 +10,8 @@ This is a complete embedded firmware development workstation based on Linux.
   development.
 - Workstation: a fully integrated development environment with tools for
   building additional documentation, emacs, vim etc.
+
+**Multi-Architecture Support**: All images support both `linux/amd64` (x86_64) and `linux/arm64` (ARM64/Apple Silicon) architectures. See [ARM Build Guide](ARM_BUILD_GUIDE.md) for details on building for Apple Silicon Macs.
   
 See [Documentation](doc/index.rst) for more detailed documentation.
 
