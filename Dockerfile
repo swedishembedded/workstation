@@ -895,6 +895,7 @@ COPY --chown=user:user conf/.tmux.conf /home/user/.tmux.conf
 COPY --chown=user:user conf/.tmux.conf.local /home/user/.tmux.conf.local
 COPY --chown=user:user conf/tmuxinator /home/user/.config/tmuxinator
 COPY --chown=user:user conf/.bashrc /home/user/.bashrc
+COPY --chown=user:user conf/.tigrc /home/user/.tigrc
 COPY --chown=user:user conf/pygdbinit /home/user/.pygdbinit
 COPY --chown=user:user conf/nvim /home/user/.config/nvim/
 
