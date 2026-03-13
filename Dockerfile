@@ -174,6 +174,7 @@ RUN apt-get -y update && \
     rsync \
     shellcheck \
     socat \
+    sysstat \
     tig \
     tmux \
     tree \
@@ -259,8 +260,10 @@ RUN apt-get -y update && \
     libelf-dev \
     libgbm-dev \
     libglib2.0-dev \
+    libegl-mesa0 \
     libgl1-mesa-dev \
     libglu1-mesa-dev \
+    mesa-common-dev \
     libgmp3-dev \
     libgnutls28-dev \
     libgtk-3-0 \
@@ -291,10 +294,14 @@ RUN apt-get -y update && \
     ncurses-dev \
     openbox \
     ovmf \
+    pylint \
     python3-cryptography \
+    python3-git \
+    python3-jinja2 \
     python3-jsonschema \
     python3-ply \
     python3-pyelftools \
+    python3-subunit \
     python3-xdg \
     python3-yaml \
     python3-pygments \
@@ -904,7 +911,7 @@ RUN curl -fLo ~/.local/share/nvim/site/autoload/plug.vim \
     --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim && \
     nvim -e --headless '+PlugInstall --sync' +qa || true && \
     nvim -e --headless '+PlugInstall --sync' +qa || true && \
-    nvim -e --headless '+TSInstall all' +qa || true
+    nvim -e --headless '+TSUpdate' +qa || true
 
 # Environment configuration
 ENV DISPLAY=:0

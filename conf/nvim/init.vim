@@ -220,6 +220,7 @@ call plug#begin()
 	" Code analysis and linting
 	Plug 'dense-analysis/ale'
 	Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
+	Plug 'HiPhish/rainbow-delimiters.nvim' " Colorful parenthesis (maintained fork)
 
 	" Development tools
 	Plug 'puremourning/vimspector'
@@ -1163,6 +1164,17 @@ if has_key(g:plugs, 'nvim-treesitter') && isdirectory(g:plugs['nvim-treesitter']
 			},
 			ensure_installed = {'c'},
 		}
+EOF
+endif
+" }}}
+
+" Plugin: HiPhish/rainbow-delimiters.nvim {{{
+if has_key(g:plugs, 'rainbow-delimiters.nvim') && isdirectory(g:plugs['rainbow-delimiters.nvim'].dir)
+	lua << EOF
+		local ok, rainbow_delimiters = pcall(require, 'rainbow-delimiters.setup')
+		if ok then
+			rainbow_delimiters.setup()
+		end
 EOF
 endif
 " }}}
