@@ -145,6 +145,7 @@ RUN apt-get -y update && \
     bash-completion \
     bats \
     bc \
+    bsdmainutils \
     btop \
     certbot \
     coreutils \
@@ -266,6 +267,9 @@ RUN apt-get -y update && \
     mesa-common-dev \
     libgmp3-dev \
     libgnutls28-dev \
+    libmpc-dev \
+    libopencv-dev \
+    libusb-1.0-0-dev \
     libgtk-3-0 \
     libgtk2.0-0 \
     libgtest-dev \
