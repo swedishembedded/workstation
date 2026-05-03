@@ -76,14 +76,17 @@ Build artifacts are copied into final images, keeping build dependencies out of 
 
 **Supported Ubuntu Versions:**
 
-- ``Ubuntu 24.04 LTS`` - Long-term support release (recommended for production)
-- ``Ubuntu 25.04`` - Latest release with newer packages
+- ``Ubuntu 26.04 LTS`` - Long-term support release (default, recommended)
+- ``Ubuntu 24.04 LTS`` - Previous LTS release
+- ``Ubuntu 25.04`` - Interim release (superseded by 26.04 LTS)
+- ``Ubuntu 22.04 LTS`` - Legacy LTS release
 
 Images are tagged with Ubuntu version using semantic versioning build metadata:
 
-- ``swedishembedded/workstation:latest-ubuntu24.04``
-- ``swedishembedded/workstation:0.26.6-1+ubuntu24.04``
-- ``swedishembedded/workstation:ubuntu25.04``
+- ``swedishembedded/workstation:latest-ubuntu26.04``
+- ``swedishembedded/workstation:0.27.0-0+ubuntu26.04``
+- ``swedishembedded/workstation:ubuntu26.04``
+- ``swedishembedded/workstation:ubuntu24.04``
 
 **Build System:**
 
@@ -99,21 +102,22 @@ Pull the latest prebuilt docker images:
 
 .. code-block:: sh
 
-    # Full developer workstation (Ubuntu 25.04)
+    # Full developer workstation (Ubuntu 26.04 LTS - default)
     docker pull swedishembedded/workstation:latest
-    
+
     # Or specific Ubuntu version
+    docker pull swedishembedded/workstation:ubuntu26.04  # Ubuntu 26.04 LTS (default)
     docker pull swedishembedded/workstation:ubuntu24.04  # Ubuntu 24.04 LTS
     docker pull swedishembedded/workstation:ubuntu25.04  # Ubuntu 25.04
-    
+
     # Or specific versioned image
-    docker pull swedishembedded/workstation:0.26.6-1+ubuntu24.04
-    
+    docker pull swedishembedded/workstation:0.27.0-0+ubuntu26.04
+
     # Other images also available per Ubuntu version
-    docker pull swedishembedded/boot:ubuntu24.04
-    docker pull swedishembedded/dev:ubuntu24.04
-    docker pull swedishembedded/rust:ubuntu24.04
-    docker pull swedishembedded/zephyr:ubuntu24.04
+    docker pull swedishembedded/boot:ubuntu26.04
+    docker pull swedishembedded/dev:ubuntu26.04
+    docker pull swedishembedded/rust:ubuntu26.04
+    docker pull swedishembedded/zephyr:ubuntu26.04
 
 Running the Workstation
 ------------------------
@@ -175,12 +179,12 @@ The fastest way to build all images is using ``docker buildx bake``:
 
 .. code-block:: sh
 
-    # Build all images in parallel (default Ubuntu 25.04)
+    # Build all images in parallel (default Ubuntu 26.04 LTS)
     make bake
-    
+
     # Build and push all images
     make bake/push
-    
+
     # Build for multiple platforms
     make PLATFORMS=linux/amd64,linux/arm64 bake
 
@@ -191,27 +195,32 @@ Build images for specific Ubuntu versions with proper semantic versioning:
 
 .. code-block:: sh
 
+    # Build all images for Ubuntu 26.04 LTS (recommended)
+    make bake/ubuntu26
+
     # Build all images for Ubuntu 24.04 LTS
     make bake/ubuntu24
-    
+
     # Build all images for Ubuntu 25.04
     make bake/ubuntu25
-    
-    # Build for BOTH Ubuntu versions in parallel
+
+    # Build for ALL Ubuntu versions in parallel
     make bake/all-ubuntu
-    
-    # Build and push Ubuntu 24.04 images
-    make bake/ubuntu24/push
-    
-    # Build and push both Ubuntu versions
+
+    # Build and push Ubuntu 26.04 images
+    make bake/ubuntu26/push
+
+    # Build and push all Ubuntu versions
     make bake/all-ubuntu/push
-    
+
     # Check current version
     make version
     # Output:
-    # Current version: 0.26.6-1
-    # Ubuntu 24.04: 0.26.6-1+ubuntu24.04
-    # Ubuntu 25.04: 0.26.6-1+ubuntu25.04
+    # Current version: 0.27.0-0
+    # Ubuntu 22.04: 0.27.0-0+ubuntu22.04
+    # Ubuntu 24.04: 0.27.0-0+ubuntu24.04
+    # Ubuntu 25.04: 0.27.0-0+ubuntu25.04
+    # Ubuntu 26.04: 0.27.0-0+ubuntu26.04
 
 Build Individual Images
 -----------------------

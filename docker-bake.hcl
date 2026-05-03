@@ -77,11 +77,16 @@ group "ubuntu25" {
   targets = ["boot-25", "dev-25", "rust-25", "zephyr-25", "workstation-25"]
 }
 
+group "ubuntu26" {
+  targets = ["boot-26", "dev-26", "rust-26", "zephyr-26", "workstation-26"]
+}
+
 group "all-ubuntu" {
   targets = [
     "boot-22", "dev-22", "rust-22", "zephyr-22", "workstation-22",
     "boot-24", "dev-24", "rust-24", "zephyr-24", "workstation-24",
-    "boot-25", "dev-25", "rust-25", "zephyr-25", "workstation-25"
+    "boot-25", "dev-25", "rust-25", "zephyr-25", "workstation-25",
+    "boot-26", "dev-26", "rust-26", "zephyr-26", "workstation-26"
   ]
 }
 
@@ -455,6 +460,104 @@ target "workstation-25" {
     "org.opencontainers.image.description" = "Full developer workstation (Ubuntu 25.04)"
     "org.opencontainers.image.vendor"      = "Swedish Embedded"
     "org.opencontainers.image.version"     = notequal("", VERSION) ? "${VERSION}+ubuntu25.04" : ""
+  }
+}
+
+# ==============================================================================
+# Ubuntu 26.04 Targets
+# ==============================================================================
+target "boot-26" {
+  inherits = ["_common"]
+  target   = "boot"
+  args     = {
+    UBUNTU_VERSION = "26.04"
+  }
+  tags = [
+    "${REGISTRY}/boot:${TAG}-ubuntu26.04",
+    "${REGISTRY}/boot:ubuntu26.04",
+    notequal("", VERSION) ? "${REGISTRY}/boot:${VERSION}+ubuntu26.04" : ""
+  ]
+  labels = {
+    "org.opencontainers.image.title"       = "Swedish Embedded Boot (Ubuntu 26.04)"
+    "org.opencontainers.image.description" = "Base OS with build essentials and Python (Ubuntu 26.04 LTS)"
+    "org.opencontainers.image.vendor"      = "Swedish Embedded"
+    "org.opencontainers.image.version"     = notequal("", VERSION) ? "${VERSION}+ubuntu26.04" : ""
+  }
+}
+
+target "dev-26" {
+  inherits = ["_common"]
+  target   = "dev"
+  args     = {
+    UBUNTU_VERSION = "26.04"
+  }
+  tags = [
+    "${REGISTRY}/dev:${TAG}-ubuntu26.04",
+    "${REGISTRY}/dev:ubuntu26.04",
+    notequal("", VERSION) ? "${REGISTRY}/dev:${VERSION}+ubuntu26.04" : ""
+  ]
+  labels = {
+    "org.opencontainers.image.title"       = "Swedish Embedded Dev (Ubuntu 26.04)"
+    "org.opencontainers.image.description" = "Development tools, Node.js, Docker CLI (Ubuntu 26.04 LTS)"
+    "org.opencontainers.image.vendor"      = "Swedish Embedded"
+    "org.opencontainers.image.version"     = notequal("", VERSION) ? "${VERSION}+ubuntu26.04" : ""
+  }
+}
+
+target "rust-26" {
+  inherits = ["_common"]
+  target   = "rust"
+  args     = {
+    UBUNTU_VERSION = "26.04"
+  }
+  tags = [
+    "${REGISTRY}/rust:${TAG}-ubuntu26.04",
+    "${REGISTRY}/rust:ubuntu26.04",
+    notequal("", VERSION) ? "${REGISTRY}/rust:${VERSION}+ubuntu26.04" : ""
+  ]
+  labels = {
+    "org.opencontainers.image.title"       = "Swedish Embedded Rust (Ubuntu 26.04)"
+    "org.opencontainers.image.description" = "Rust toolchain with cross-compilation (Ubuntu 26.04 LTS)"
+    "org.opencontainers.image.vendor"      = "Swedish Embedded"
+    "org.opencontainers.image.version"     = notequal("", VERSION) ? "${VERSION}+ubuntu26.04" : ""
+  }
+}
+
+target "zephyr-26" {
+  inherits = ["_common"]
+  target   = "zephyr"
+  args     = {
+    UBUNTU_VERSION = "26.04"
+  }
+  tags = [
+    "${REGISTRY}/zephyr:${TAG}-ubuntu26.04",
+    "${REGISTRY}/zephyr:ubuntu26.04",
+    notequal("", VERSION) ? "${REGISTRY}/zephyr:${VERSION}+ubuntu26.04" : ""
+  ]
+  labels = {
+    "org.opencontainers.image.title"       = "Swedish Embedded Zephyr (Ubuntu 26.04)"
+    "org.opencontainers.image.description" = "Zephyr RTOS CI/build environment (Ubuntu 26.04 LTS)"
+    "org.opencontainers.image.vendor"      = "Swedish Embedded"
+    "org.opencontainers.image.version"     = notequal("", VERSION) ? "${VERSION}+ubuntu26.04" : ""
+  }
+}
+
+target "workstation-26" {
+  inherits = ["_common"]
+  target   = "workstation"
+  args     = {
+    UBUNTU_VERSION = "26.04"
+  }
+  tags = [
+    "${REGISTRY}/workstation:${TAG}-ubuntu26.04",
+    "${REGISTRY}/workstation:ubuntu26.04",
+    notequal("", VERSION) ? "${REGISTRY}/workstation:${VERSION}+ubuntu26.04" : ""
+  ]
+  labels = {
+    "org.opencontainers.image.title"       = "Swedish Embedded Workstation (Ubuntu 26.04)"
+    "org.opencontainers.image.description" = "Full developer workstation (Ubuntu 26.04 LTS)"
+    "org.opencontainers.image.vendor"      = "Swedish Embedded"
+    "org.opencontainers.image.version"     = notequal("", VERSION) ? "${VERSION}+ubuntu26.04" : ""
   }
 }
 

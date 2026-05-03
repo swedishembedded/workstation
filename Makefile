@@ -39,7 +39,7 @@ VERSION      := $(shell cat VERSION | tr -d '\n' | tr -d ' ')
 TARGETS := boot dev rust zephyr workstation
 
 # Ubuntu versions
-UBUNTU_VERSIONS := 22 24 25
+UBUNTU_VERSIONS := 22 24 25 26
 
 # ==============================================================================
 # Default Targets
@@ -100,11 +100,20 @@ bake/ubuntu25:
 		--set=*.args.VERSION=$(VERSION) \
 		ubuntu25
 
+bake/ubuntu26:
+	@echo "Building all Ubuntu 26.04 images with version $(VERSION)+ubuntu26.04..."
+	$(DOCKER) buildx bake \
+		--file $(BAKE_FILE) \
+		--set=*.platform=$(PLATFORMS) \
+		--set=*.args.VERSION=$(VERSION) \
+		ubuntu26
+
 bake/all-ubuntu:
 	@echo "Building all images for all Ubuntu versions..."
 	@echo "  Ubuntu 22.04: $(VERSION)+ubuntu22.04"
 	@echo "  Ubuntu 24.04: $(VERSION)+ubuntu24.04"
 	@echo "  Ubuntu 25.04: $(VERSION)+ubuntu25.04"
+	@echo "  Ubuntu 26.04: $(VERSION)+ubuntu26.04"
 	$(DOCKER) buildx bake \
 		--file $(BAKE_FILE) \
 		--set=*.platform=$(PLATFORMS) \
@@ -133,6 +142,14 @@ bake/ubuntu25/push:
 		--set=*.platform=$(PLATFORMS) \
 		--push \
 		ubuntu25
+
+bake/ubuntu26/push:
+	@echo "Building and pushing all Ubuntu 26.04 images..."
+	$(DOCKER) buildx bake \
+		--file $(BAKE_FILE) \
+		--set=*.platform=$(PLATFORMS) \
+		--push \
+		ubuntu26
 
 bake/all-ubuntu/push:
 	@echo "Building and pushing all images for all Ubuntu versions..."
@@ -243,6 +260,7 @@ version:
 	@echo "Ubuntu 22.04: $(VERSION)+ubuntu22.04"
 	@echo "Ubuntu 24.04: $(VERSION)+ubuntu24.04"
 	@echo "Ubuntu 25.04: $(VERSION)+ubuntu25.04"
+	@echo "Ubuntu 26.04: $(VERSION)+ubuntu26.04"
 
 clean:
 	@echo "Cleaning up Docker build cache..."
@@ -273,6 +291,10 @@ inspect/%/ubuntu25:
 	@echo "Inspecting $* Ubuntu 25.04 image..."
 	$(DOCKER) image inspect $(IMG_NS)/$*:ubuntu25.04
 
+inspect/%/ubuntu26:
+	@echo "Inspecting $* Ubuntu 26.04 image..."
+	$(DOCKER) image inspect $(IMG_NS)/$*:ubuntu26.04
+
 shell/%/ubuntu22:
 	@echo "Starting interactive shell in $* Ubuntu 22.04 image..."
 	$(DOCKER) run --rm -it $(IMG_NS)/$*:ubuntu22.04 /bin/bash
@@ -284,6 +306,10 @@ shell/%/ubuntu24:
 shell/%/ubuntu25:
 	@echo "Starting interactive shell in $* Ubuntu 25.04 image..."
 	$(DOCKER) run --rm -it $(IMG_NS)/$*:ubuntu25.04 /bin/bash
+
+shell/%/ubuntu26:
+	@echo "Starting interactive shell in $* Ubuntu 26.04 image..."
+	$(DOCKER) run --rm -it $(IMG_NS)/$*:ubuntu26.04 /bin/bash
 
 # ==============================================================================
 # Help
@@ -312,10 +338,12 @@ help:
 	@echo "  bake/ubuntu22          - Build all Ubuntu 22.04 images ($(VERSION)+ubuntu22.04)"
 	@echo "  bake/ubuntu24          - Build all Ubuntu 24.04 images ($(VERSION)+ubuntu24.04)"
 	@echo "  bake/ubuntu25          - Build all Ubuntu 25.04 images ($(VERSION)+ubuntu25.04)"
+	@echo "  bake/ubuntu26          - Build all Ubuntu 26.04 images ($(VERSION)+ubuntu26.04)"
 	@echo "  bake/all-ubuntu        - Build for all Ubuntu versions in parallel"
 	@echo "  bake/ubuntu22/push     - Build and push Ubuntu 22.04 images"
 	@echo "  bake/ubuntu24/push     - Build and push Ubuntu 24.04 images"
 	@echo "  bake/ubuntu25/push     - Build and push Ubuntu 25.04 images"
+	@echo "  bake/ubuntu26/push     - Build and push Ubuntu 26.04 images"
 	@echo "  bake/all-ubuntu/push   - Build and push all Ubuntu versions"
 	@echo ""
 	@echo "Individual image targets:"
@@ -341,7 +369,9 @@ help:
 	@echo "  inspect/<image>        - Inspect image metadata"
 	@echo "  shell/<image>          - Start interactive shell in image"
 	@echo "  inspect/<image>/ubuntu22 - Inspect Ubuntu 22.04 image"
+	@echo "  inspect/<image>/ubuntu26 - Inspect Ubuntu 26.04 image"
 	@echo "  shell/<image>/ubuntu22   - Shell in Ubuntu 22.04 image"
+	@echo "  shell/<image>/ubuntu26   - Shell in Ubuntu 26.04 image"
 	@echo ""
 	@echo "Configuration:"
 	@echo "  DOCKER                 - Docker command (default: docker)"
@@ -357,8 +387,11 @@ help:
 	@echo "  make bake/all-ubuntu                   - Build all Ubuntu versions"
 	@echo "  make bake/ubuntu22/push                - Build and push Ubuntu 22.04"
 	@echo "  make bake/ubuntu24/push                - Build and push Ubuntu 24.04"
+	@echo "  make bake/ubuntu26/push                - Build and push Ubuntu 26.04 LTS"
+	@echo "  make PLATFORMS=linux/amd64,linux/arm64 bake/all-ubuntu/push"
 	@echo "  make PLATFORMS=linux/arm64 buildx/boot - Build boot for ARM64"
 	@echo "  make shell/workstation/ubuntu22        - Shell in Ubuntu 22.04 workstation"
+	@echo "  make shell/workstation/ubuntu26        - Shell in Ubuntu 26.04 workstation"
 
 bootstrap:
 	@echo "Bootstrap target is deprecated. Use 'make bake' instead."
