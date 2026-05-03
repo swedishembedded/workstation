@@ -145,7 +145,6 @@ RUN apt-get -y update && \
     bash-completion \
     bats \
     bc \
-    bsdmainutils \
     btop \
     certbot \
     coreutils \
@@ -175,7 +174,6 @@ RUN apt-get -y update && \
     rsync \
     shellcheck \
     socat \
-    sysstat \
     tig \
     tmux \
     tree \
@@ -261,15 +259,10 @@ RUN apt-get -y update && \
     libelf-dev \
     libgbm-dev \
     libglib2.0-dev \
-    libegl-mesa0 \
     libgl1-mesa-dev \
     libglu1-mesa-dev \
-    mesa-common-dev \
     libgmp3-dev \
     libgnutls28-dev \
-    libmpc-dev \
-    libopencv-dev \
-    libusb-1.0-0-dev \
     libgtk-3-0 \
     libgtk2.0-0 \
     libgtest-dev \
@@ -298,19 +291,14 @@ RUN apt-get -y update && \
     ncurses-dev \
     openbox \
     ovmf \
-    pylint \
     python3-cryptography \
-    python3-git \
-    python3-jinja2 \
     python3-jsonschema \
     python3-ply \
     python3-pyelftools \
-    python3-subunit \
     python3-xdg \
     python3-yaml \
     python3-pygments \
     qemu-system \
-    qemu-user-static \
     uuid \
     uuid-dev \
     x11proto-core-dev \
@@ -320,6 +308,15 @@ RUN apt-get -y update && \
     biber \
     octave \
     && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install QEMU user-mode emulation support
+# Ubuntu 26.04+ replaced qemu-user-static with qemu-user-binfmt; try both
+RUN apt-get -y update && \
+    (apt-get install --no-install-recommends -y qemu-user-static || \
+        apt-get install --no-install-recommends -y qemu-user-binfmt || \
+        echo "Note: qemu-user emulation package not available") && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/*
 
@@ -402,18 +399,12 @@ RUN mkdir -p /etc/apt/keyrings && \
     chmod a+r /etc/apt/keyrings/docker.asc && \
     UBUNTU_CODENAME=$(lsb_release -cs) && \
     DOCKER_CODENAME=${UBUNTU_CODENAME} && \
-    # Map HOSTTYPE to Docker's architecture naming (amd64 or arm64)
-    DOCKER_ARCH=$(case ${HOSTTYPE} in \
-        x86_64) echo "amd64";; \
-        aarch64) echo "arm64";; \
-        *) echo "amd64";; \
-    esac) && \
     # Fallback to noble (24.04) for unsupported releases like plucky (25.04)
-    if ! curl -fsSL https://download.docker.com/linux/ubuntu/dists/${UBUNTU_CODENAME}/stable/binary-${DOCKER_ARCH}/Packages 2>/dev/null | grep -q "Package:"; then \
+    if ! curl -fsSL https://download.docker.com/linux/ubuntu/dists/${UBUNTU_CODENAME}/stable/binary-amd64/Packages 2>/dev/null | grep -q "Package:"; then \
         echo "Docker repository not available for ${UBUNTU_CODENAME}, using noble (24.04) fallback"; \
         DOCKER_CODENAME="noble"; \
     fi && \
-    echo "deb [arch=${DOCKER_ARCH} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${DOCKER_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${DOCKER_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
     apt-get update && \
     if [ "${INSTALL_DOCKER_DAEMON}" = "true" ]; then \
         apt-get install -qy \
@@ -452,12 +443,7 @@ RUN curl -fsSL https://packages.smallstep.com/keys/apt/repo-signing-key.gpg | te
     rm -rf /var/lib/apt/lists/*
 
 # Install MinIO Client (mc)
-RUN MINIO_ARCH=$(case ${HOSTTYPE} in \
-        x86_64) echo "linux-amd64";; \
-        aarch64) echo "linux-arm64";; \
-        *) echo "linux-amd64";; \
-    esac) && \
-    curl -sSL https://dl.min.io/client/mc/release/${MINIO_ARCH}/mc -o /usr/local/bin/mc && \
+RUN curl -sSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc && \
     chmod +x /usr/local/bin/mc
 
 # Install Google Cloud SDK (gcloud)
@@ -923,7 +909,6 @@ COPY --chown=user:user conf/.tmux.conf /home/user/.tmux.conf
 COPY --chown=user:user conf/.tmux.conf.local /home/user/.tmux.conf.local
 COPY --chown=user:user conf/tmuxinator /home/user/.config/tmuxinator
 COPY --chown=user:user conf/.bashrc /home/user/.bashrc
-COPY --chown=user:user conf/.tigrc /home/user/.tigrc
 COPY --chown=user:user conf/pygdbinit /home/user/.pygdbinit
 COPY --chown=user:user conf/nvim /home/user/.config/nvim/
 
@@ -932,7 +917,7 @@ RUN curl -fLo ~/.local/share/nvim/site/autoload/plug.vim \
     --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim && \
     nvim -e --headless '+PlugInstall --sync' +qa || true && \
     nvim -e --headless '+PlugInstall --sync' +qa || true && \
-    nvim -e --headless '+TSUpdate' +qa || true
+    nvim -e --headless '+TSInstall all' +qa || true
 
 # Environment configuration
 ENV DISPLAY=:0
