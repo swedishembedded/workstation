@@ -22,15 +22,15 @@
 # ==============================================================================
 # Build Arguments - Version Control
 # ==============================================================================
-ARG UBUNTU_VERSION=25.04
+ARG UBUNTU_VERSION=26.04
 ARG NODE_VERSION=22
-ARG ZSDK_VERSION=0.17.4
+ARG ZSDK_VERSION=1.0.1
 ARG LLVM_VERSION=20
 ARG NEOVIM_VERSION=v0.11.4
 ARG OSS_CAD_SUITE_VERSION=20240211
-ARG DOXYGEN_VERSION=1.9.4
-ARG RENODE_VERSION=1.15.3
-ARG BSIM_VERSION=v2.1
+ARG DOXYGEN_VERSION=1.16.1
+ARG RENODE_VERSION=1.16.0
+ARG BSIM_VERSION=v3.0.1
 ARG SPARSE_VERSION=9212270048c3bd23f56c20a83d4f89b870b2b26e
 ARG PROTOC_VERSION=21.7
 
@@ -323,14 +323,19 @@ RUN apt-get -y update && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/*
 
-# Install version-specific development libraries (Ubuntu 24.04+)
-# These packages are not available in Ubuntu 22.04
+# Install version-specific development libraries
+# libclang-21-dev / libgccjit-15-dev ship with Ubuntu 26.04; the || echo
+# fallback allows older Ubuntu variants to install whatever is available
 RUN apt-get -y update && \
     (apt-get install --no-install-recommends -y \
-        libclang-19-dev \
-        libgccjit-14-dev \
+        libclang-21-dev \
+        libgccjit-15-dev \
         libgccjit0 || \
-        echo "Note: Some version-specific dev packages not available (expected on Ubuntu 22.04)") && \
+        (apt-get install --no-install-recommends -y \
+            libclang-19-dev \
+            libgccjit-14-dev \
+            libgccjit0 || \
+            echo "Note: Some version-specific dev packages not available")) && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/*
 
@@ -600,6 +605,7 @@ USER root
 
 # Download and extract Zephyr SDK
 # Map TARGETARCH (amd64/arm64) to HOSTTYPE (x86_64/aarch64)
+# SDK 1.0.x and later use the _gnu.tar.xz naming convention
 RUN HOSTTYPE=$(case ${TARGETARCH} in \
         amd64) echo "x86_64";; \
         arm64) echo "aarch64";; \
@@ -607,9 +613,9 @@ RUN HOSTTYPE=$(case ${TARGETARCH} in \
     esac) && \
     mkdir -p /opt/toolchains && \
     cd /opt/toolchains && \
-    wget ${WGET_ARGS} https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZSDK_VERSION}/zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.xz && \
-    tar xf zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.xz && \
-    rm zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}.tar.xz && \
+    wget ${WGET_ARGS} https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZSDK_VERSION}/zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}_gnu.tar.xz && \
+    tar xf zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}_gnu.tar.xz && \
+    rm zephyr-sdk-${ZSDK_VERSION}_linux-${HOSTTYPE}_gnu.tar.xz && \
     /opt/toolchains/zephyr-sdk-${ZSDK_VERSION}/setup.sh -t all -h -c
 
 # ==============================================================================
@@ -687,8 +693,10 @@ ARG TARGETARCH
 USER root
 
 # Download Doxygen (x86_64 only)
+# Using GitHub releases; SourceForge mirror is unreliable for 1.16+
 RUN if [ "$(uname -m)" = "x86_64" ]; then \
-        wget ${WGET_ARGS} https://downloads.sourceforge.net/project/doxygen/rel-${DOXYGEN_VERSION}/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz && \
+        DOXY_TAG=$(echo ${DOXYGEN_VERSION} | tr '.' '_') && \
+        wget ${WGET_ARGS} https://github.com/doxygen/doxygen/releases/download/Release_${DOXY_TAG}/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz && \
         tar xf doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz -C /opt && \
         rm doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz \
     ; fi
@@ -900,6 +908,15 @@ RUN pip3 install --no-cache-dir \
     pip3 install --upgrade git+https://github.com/antmicro/renode-run.git && \
     pip3 cache purge && \
     sudo chown -R user:user ${VIRTUAL_ENV}
+
+# Install Go
+USER root
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y \
+        golang-go && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/*
+USER user
 
 # Copy user configuration files
 COPY --chown=user:user conf/.tmux.conf /home/user/.tmux.conf
